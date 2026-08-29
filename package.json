@@ -13,6 +13,7 @@
   },
   "keywords": ["architecture", "code-map", "tree-sitter", "knowledge-graph", "visualization"],
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.69.0",
     "@tree-sitter-grammars/tree-sitter-kotlin": "1.1.0",
     "fuse.js": "^7.1.0",
     "ignore": "^7.0.5",

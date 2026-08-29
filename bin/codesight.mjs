@@ -76,6 +76,26 @@ async function cmdBuild(args) {
   return 0;
 }
 
+async function cmdEnrich(args) {
+  const { enrich } = await import('../src/enrich/index.mjs');
+  const projectRoot = resolve(args._[0] || process.cwd());
+  const outDir = resolve(args.out || join(projectRoot, '.codesight'));
+  const opts = {
+    model: typeof args.model === 'string' ? args.model : undefined,
+    provider: typeof args.provider === 'string' ? args.provider : undefined,
+    paths: typeof args.paths === 'string' ? args.paths.split(',').map((s) => s.trim()).filter(Boolean) : null,
+    force: !!args.force,
+    onProgress: (d, t) => process.stderr.write(`\r  summarising ${d}/${t}…   `),
+  };
+  process.stderr.write(`codesight enrich ${projectRoot}\n`);
+  const r = await enrich(projectRoot, outDir, opts);
+  process.stdout.write(
+    `\n\n  ${r.summarized} summarised · ${r.reused} from cache · ${r.targeted} files targeted\n` +
+    `  → ${join(outDir, 'summaries.json')}\n  run 'codesight build' to see them in the map\n\n`,
+  );
+  return 0;
+}
+
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
   if (!command || command === 'help' || command === '--help' || command === '-h') {
@@ -89,6 +109,7 @@ async function main() {
   }
   const args = parseArgs(rest);
   if (command === 'scan') return cmdScan(args);
+  if (command === 'enrich') return cmdEnrich(args);
   if (command === 'build') return cmdBuild(args);
   process.stderr.write(`codesight ${command}: not wired up yet — scaffolding in progress.\n`);
   return 1;
