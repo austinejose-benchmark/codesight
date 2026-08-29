@@ -79,11 +79,25 @@ export async function enrich(projectRoot, outDir, opts = {}) {
   }
 
   writeFileSync(summariesPath, JSON.stringify(summaries, null, 1));
-  return { targeted: targets.length, reused, summarized: todo.length };
+  return { targeted: targets.length, reused, summarized: todo.length, provider: usedProvider };
 }
 
+let usedProvider = null;
+
 async function loadProvider(opts) {
-  const name = opts.provider || 'anthropic';
+  // Default: the user's own Claude Code (the `claude` CLI) — no API key. Fall
+  // back to a direct API call only when the CLI isn't available.
+  let name = opts.provider;
+  if (!name) {
+    const cli = await import('./claude-cli.mjs');
+    if (cli.isAvailable()) name = 'claude-cli';
+    else {
+      const api = await import('./anthropic.mjs');
+      if (api.isAvailable()) name = 'anthropic';
+      else throw new Error('no Claude available — run inside Claude Code (the `claude` CLI), or set ANTHROPIC_API_KEY');
+    }
+  }
+  usedProvider = name;
   const mod = await import(`./${name}.mjs`);
   return mod.createProvider({ model: opts.model });
 }

@@ -26,7 +26,7 @@ function printHelp() {
   for (const [name, desc] of Object.entries(COMMANDS)) {
     process.stdout.write(`  ${name.padEnd(9)}${desc}\n`);
   }
-  process.stdout.write('\nAI summaries need ANTHROPIC_API_KEY (or `ant auth login`).\n\n');
+  process.stdout.write('\nAI summaries use your Claude Code login by default (the `claude` CLI) — no key needed.\nSet ANTHROPIC_API_KEY only for standalone/CI use without Claude Code.\n\n');
 }
 
 // tiny flag parser: returns { _: positionals[], <flag>: value|true }
@@ -101,7 +101,7 @@ async function cmdBuild(args) {
       process.stderr.write('\n');
     } catch (err) {
       const msg = String(err?.message || err).split('\n')[0];
-      process.stderr.write(`\n  (no summaries: ${msg})\n  set ANTHROPIC_API_KEY, or pass --no-enrich for a structure-only map\n`);
+      process.stderr.write(`\n  (no summaries: ${msg})\n  run inside Claude Code (the \`claude\` CLI), or pass --no-enrich for a structure-only map\n`);
     }
   }
 
