@@ -23,6 +23,6 @@ export function build(structurePath, outDir, htmlOut) {
     .replace('__CODESIGHT_DATA__', json);
 
   writeFileSync(htmlOut, html);
-  writeFileSync(join(outDir, 'coresight.json'), JSON.stringify(payload, null, 1));
+  writeFileSync(join(outDir, 'codesight.json'), JSON.stringify(payload, null, 1));
   return { payload, htmlOut };
 }

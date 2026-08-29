@@ -9,6 +9,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { loadProvider } from './provider.mjs';
 
 const CONTENT_CAP = 6000; // chars of file content sent to the model per file
 const hashOf = (c) => createHash('sha256').update(c).digest('hex').slice(0, 16);
@@ -48,7 +49,9 @@ export async function enrich(projectRoot, outDir, opts = {}) {
   }
 
   if (todo.length) {
-    const provider = await loadProvider(opts);
+    const loaded = await loadProvider(opts);
+    usedProvider = loaded.name;
+    const provider = loaded.provider;
     const batchSize = opts.batchSize || 8;
     const concurrency = Math.max(1, opts.concurrency || 4);
     const batches = [];
@@ -83,21 +86,3 @@ export async function enrich(projectRoot, outDir, opts = {}) {
 }
 
 let usedProvider = null;
-
-async function loadProvider(opts) {
-  // Default: the user's own Claude Code (the `claude` CLI) — no API key. Fall
-  // back to a direct API call only when the CLI isn't available.
-  let name = opts.provider;
-  if (!name) {
-    const cli = await import('./claude-cli.mjs');
-    if (cli.isAvailable()) name = 'claude-cli';
-    else {
-      const api = await import('./anthropic.mjs');
-      if (api.isAvailable()) name = 'anthropic';
-      else throw new Error('no Claude available — run inside Claude Code (the `claude` CLI), or set ANTHROPIC_API_KEY');
-    }
-  }
-  usedProvider = name;
-  const mod = await import(`./${name}.mjs`);
-  return mod.createProvider({ model: opts.model });
-}

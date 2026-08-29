@@ -81,6 +81,7 @@ function enrichOpts(args) {
 async function cmdBuild(args) {
   const { scan } = await import('../src/scan/index.mjs');
   const { enrich } = await import('../src/enrich/index.mjs');
+  const { architect } = await import('../src/architect/index.mjs');
   const { build } = await import('../src/assemble/build.mjs');
   const projectRoot = resolve(args._[0] || process.cwd());
   const outDir = resolve(args.out || join(projectRoot, '.codesight'));
@@ -105,13 +106,25 @@ async function cmdBuild(args) {
     }
   }
 
+  // 2b — architecture (rich layer): the flow spine, domains, stores, infra,
+  // request diagram. Needs summaries; skippable with --no-arch.
+  if (enriched && !args['no-arch']) {
+    try {
+      process.stderr.write('  inferring architecture…\n');
+      await architect(projectRoot, outDir, enrichOpts(args));
+    } catch (err) {
+      process.stderr.write(`  (no architecture layer: ${String(err?.message || err).split('\n')[0]})\n`);
+    }
+  }
+
   // 3 — assemble the viewer.
   const htmlOut = resolve(args.o || join(outDir, 'codesight.html'));
   const { payload } = build(structurePath, outDir, htmlOut);
   const secs = ((Date.now() - started) / 1000).toFixed(1);
   const summ = enriched ? `${enriched.summarized} summarised, ${enriched.reused} cached · ` : 'structure-only · ';
+  const shape = payload.hasArch ? `${payload.spine.length} stages · ${payload.domains.length} domains` : `${payload.spine.length} areas`;
   process.stdout.write(
-    `\n  ${payload.overview.name} · ${payload.spine.length} areas · ${payload.files.length} files · ${summ}${secs}s\n` +
+    `\n  ${payload.overview.name} · ${shape} · ${payload.files.length} files · ${summ}${secs}s\n` +
     `  → ${htmlOut}\n\n`,
   );
   if (args.open) openInBrowser(htmlOut);

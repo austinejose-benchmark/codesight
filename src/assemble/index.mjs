@@ -1,4 +1,4 @@
-// Assemble the viewer payload (coresight.json) from the free structure.json,
+// Assemble the viewer payload (codesight.json) from the free structure.json,
 // merging any lean summaries produced by `codesight enrich`, and inferring a
 // default "spine" (the left-rail areas) from the directory layout.
 //
@@ -53,33 +53,43 @@ function inferAreas(files) {
   return { areas, keyOf };
 }
 
+function readJSON(p) {
+  if (!existsSync(p)) return null;
+  try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return null; }
+}
+
 export function assemble(structure, outDir) {
-  // merge summaries if enrich has run
-  const summariesPath = join(outDir, 'summaries.json');
-  let summaries = {};
-  if (existsSync(summariesPath)) {
-    try { summaries = JSON.parse(readFileSync(summariesPath, 'utf8')); } catch { /* ignore */ }
-  }
+  const summaries = readJSON(join(outDir, 'summaries.json')) || {};
+  const arch = readJSON(join(outDir, 'architecture.json')); // rich layer, may be null
+
   const { areas, keyOf } = inferAreas(structure.files);
   const files = structure.files.map((f) => {
     const s = summaries[f.path];
-    const merged = s ? { ...f, summary: s.summary || '', notes: s.notes || [] } : f;
-    return { ...merged, area: keyOf(f.path) };
+    return { ...f, summary: s?.summary || '', notes: s?.notes || [], area: keyOf(f.path) };
   });
   const enrichedCount = files.filter((f) => f.summary).length;
+  const hasArch = Boolean(arch && Array.isArray(arch.spine) && arch.spine.length);
+
+  // Spine: the architect's request flow if present, else directory areas.
+  const spine = hasArch
+    ? arch.spine.map((s, i) => ({ id: s.id || `stage-${i}`, n: i + 1, title: s.title, blurb: s.blurb || '', files: s.files || [], kind: 'stage' }))
+    : areas.map((a) => ({ id: `area:${a.dir}`, title: a.dir === '(root)' ? 'root' : a.dir, dir: a.dir, kind: a.kind, n: a.n }));
 
   const overview = {
     name: structure.project.name,
-    description: structure.project.description || '',
+    description: (arch && arch.purpose) || structure.project.description || '',
+    invariants: (arch && arch.invariants) || [],
     badges: [
       `${structure.stats.files} files`,
       `${structure.stats.functions} functions`,
+      ...(hasArch ? [`${(arch.domains || []).length} domains`] : []),
       ...(enrichedCount ? [`${enrichedCount} summarised`] : ['structure-only']),
     ],
     stats: [
       { label: 'Files', value: String(structure.stats.files) },
       { label: 'Functions', value: String(structure.stats.functions) },
       { label: 'Classes', value: String(structure.stats.classes) },
+      ...(hasArch ? [{ label: 'Domains', value: String((arch.domains || []).length) }] : []),
       { label: 'Languages', value: String(structure.project.languages.length) },
       { label: 'Areas', value: String(areas.length) },
     ],
@@ -87,21 +97,18 @@ export function assemble(structure, outDir) {
     languages: structure.project.languages,
   };
 
-  const spine = areas.map((a) => ({
-    id: `area:${a.dir}`,
-    title: a.dir === '(root)' ? 'root' : a.dir,
-    dir: a.dir,
-    kind: a.kind,
-    n: a.n,
-  }));
-
   return {
     version: 1,
     generatedAt: structure.generatedAt,
     git: structure.git,
     project: structure.project,
     overview,
+    hasArch,
     spine,
+    domains: (arch && arch.domains) || [],
+    stores: (arch && arch.stores) || [],
+    infra: (arch && arch.infra) || [],
+    diagram: (arch && arch.diagram) || '',
     files,
   };
 }

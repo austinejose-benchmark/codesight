@@ -32,14 +32,15 @@ function runClaude(prompt, model) {
 
 export function createProvider({ model } = {}) {
   const modelId = resolveModel(model);
+  const complete = async ({ system, user }) => {
+    const raw = await runClaude(`${system}\n\n${user}`, modelId);
+    // --output-format json wraps the reply: { type:"result", result:"<text>", ... }
+    try { const j = JSON.parse(raw); return j.result ?? j.text ?? raw; } catch { return raw; }
+  };
   return {
+    complete,
     async summarize(batch) {
-      const prompt = `${SYSTEM}\n\n${buildUserContent(batch)}`;
-      const raw = await runClaude(prompt, modelId);
-      // --output-format json wraps the reply: { type:"result", result:"<text>", ... }
-      let resultText = raw;
-      try { const j = JSON.parse(raw); resultText = j.result ?? j.text ?? raw; } catch { /* raw is the text */ }
-      return parseResults(resultText, batch);
+      return parseResults(await complete({ system: SYSTEM, user: buildUserContent(batch) }), batch);
     },
   };
 }
