@@ -34,6 +34,13 @@ export async function enrich(projectRoot, outDir, opts = {}) {
     let content;
     try { content = readFileSync(join(projectRoot, f.path), 'utf8'); } catch { continue; }
     const hash = hashOf(content);
+    // Portable cache: a committed summaries.json whose hash still matches is
+    // reused as-is, so a teammate who pulls the repo re-runs for free.
+    const existing = summaries[f.path];
+    if (existing && existing.hash === hash && !opts.force) {
+      reused++;
+      continue;
+    }
     const cachePath = join(cacheDir, `${hash}.json`);
     if (existsSync(cachePath) && !opts.force) {
       const c = JSON.parse(readFileSync(cachePath, 'utf8'));

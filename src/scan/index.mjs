@@ -8,7 +8,7 @@
 // Vendored from Understand-Anything (MIT) — see NOTICE.
 
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -47,6 +47,24 @@ export async function scan(projectRoot, outDir) {
   projectRoot = resolve(projectRoot);
   const tmp = join(outDir, 'tmp');
   mkdirSync(tmp, { recursive: true });
+
+  // The .codesight/ folder lives in the target repo (like understand-anything's
+  // .ua/). Commit the map (structure/summaries/architecture/codesight.json +
+  // codesight.html); ignore only the local accelerators. Written once, never clobbered.
+  const gitignore = join(outDir, '.gitignore');
+  if (!existsSync(gitignore)) {
+    writeFileSync(gitignore, [
+      '# codesight data dir. Commit the AI work + viewer:',
+      '#   summaries.json, architecture.json  (paid — a portable cache; re-runs stay free)',
+      '#   codesight.html                     (the self-contained viewer)',
+      '# Everything below regenerates for free from those + a re-scan.',
+      'tmp/',
+      'cache/',
+      'structure.json',
+      'codesight.json',
+      '',
+    ].join('\n'));
+  }
 
   // 1 — enumerate files
   const scanOut = join(tmp, 'scan.json');
