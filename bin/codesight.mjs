@@ -2,10 +2,12 @@
 // codesight CLI entry. Routes to the scan / enrich / build stages.
 
 import { resolve, join } from 'node:path';
-import { existsSync } from 'node:fs';
-import { spawn } from 'node:child_process';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync } from 'node:fs';
+import { spawn, spawnSync } from 'node:child_process';
 
 const COMMANDS = {
+  update: 'incremental — only re-do the changed files + show their impact',
+  hook: 'install a commit/PR hook that keeps the map fresh (--github for CI)',
   scan: 'structure only — tree-sitter, 0 tokens (advanced / CI)',
   enrich: 'summaries only — for an already-scanned repo (advanced)',
   build: 'scan + enrich + build the map (same as the default)',
@@ -144,6 +146,121 @@ async function cmdEnrich(args) {
   return 0;
 }
 
+// ---- incremental update (diff-driven) ----
+function git(root, args) {
+  const r = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' });
+  return r.status === 0 ? r.stdout : '';
+}
+function changedFiles(root, args) {
+  let out = '';
+  if (typeof args.base === 'string') out = git(root, ['diff', '--name-only', `${args.base}...HEAD`]);
+  else if (args.staged) out = git(root, ['diff', '--cached', '--name-only']);
+  else out = `${git(root, ['diff', '--name-only', 'HEAD'])}\n${git(root, ['ls-files', '--others', '--exclude-standard'])}`;
+  return [...new Set(out.split('\n').map((s) => s.trim()).filter(Boolean))];
+}
+
+// codesight update — only touch the changed files: re-summarise them, refresh the
+// links, and report the impact on other files. The architect (flow/domains) is
+// NOT re-run unless you pass --arch — a per-file edit rarely changes the shape.
+async function cmdUpdate(args) {
+  const { scan } = await import('../src/scan/index.mjs');
+  const { enrich } = await import('../src/enrich/index.mjs');
+  const { architect } = await import('../src/architect/index.mjs');
+  const { build } = await import('../src/assemble/build.mjs');
+  const projectRoot = resolve(args._[0] || process.cwd());
+  const outDir = resolve(args.out || join(projectRoot, '.codesight'));
+
+  const changed = changedFiles(projectRoot, args);
+  if (!changed.length) { process.stdout.write('\n  codesight update: no changed files.\n\n'); return 0; }
+  process.stderr.write(`codesight update — ${changed.length} changed file(s)\n  rescanning structure…\n`);
+
+  await scan(projectRoot, outDir); // fast + free; picks up new/deleted files and fresh links
+  const structure = JSON.parse(readFileSync(join(outDir, 'structure.json'), 'utf8'));
+  const codePaths = new Set(structure.files.map((f) => f.path));
+  const codeChanged = changed.filter((p) => codePaths.has(p));
+
+  if (codeChanged.length && !args['no-enrich']) {
+    try {
+      await enrich(projectRoot, outDir, { ...enrichOpts(args), paths: codeChanged });
+      process.stderr.write('\n');
+    } catch (err) {
+      process.stderr.write(`\n  (no summaries: ${String(err?.message || err).split('\n')[0]})\n`);
+    }
+  }
+  if (args.arch) {
+    try { process.stderr.write('  re-inferring architecture…\n'); await architect(projectRoot, outDir, enrichOpts(args)); } catch { /* keep cached */ }
+  }
+
+  const htmlOut = resolve(args.o || join(outDir, 'codesight.html'));
+  const { payload } = build(join(outDir, 'structure.json'), outDir, htmlOut);
+
+  // Impact: which files import the ones that changed.
+  const rev = new Map();
+  for (const f of structure.files) for (const imp of (f.imports || [])) {
+    if (!rev.has(imp)) rev.set(imp, []);
+    rev.get(imp).push(f.path);
+  }
+  process.stdout.write(`\n  ${codeChanged.length} file summar${codeChanged.length === 1 ? 'y' : 'ies'} refreshed · ${payload.files.length} files · map updated${args.arch ? ' (+architecture)' : ' (architecture reused)'}\n  → ${htmlOut}\n`);
+  process.stdout.write('\n  change effect — files that import the changed ones:\n');
+  let any = false;
+  for (const p of codeChanged) {
+    const deps = rev.get(p) || [];
+    if (deps.length) { any = true; process.stdout.write(`    ${p}\n      ← ${deps.length} dependent(s): ${deps.slice(0, 6).map((d) => d.split('/').pop()).join(', ')}${deps.length > 6 ? '…' : ''}\n`); }
+  }
+  if (!any) process.stdout.write('    (none — the changed files are not imported elsewhere)\n');
+  process.stdout.write('\n');
+  return 0;
+}
+
+const GH_ACTION = `name: codesight
+on:
+  pull_request:
+jobs:
+  map:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Refresh the codesight map for changed files
+        env:
+          ANTHROPIC_API_KEY: \${{ secrets.ANTHROPIC_API_KEY }}
+        run: npx codesight update --base origin/\${{ github.base_ref }}
+      - name: Commit the updated map
+        run: |
+          git config user.name  "codesight"
+          git config user.email "codesight@users.noreply.github.com"
+          git add .codesight && git commit -m "codesight: refresh map" || echo "no changes"
+          git push || true
+`;
+
+const PRE_COMMIT = `#!/bin/sh
+# codesight — refresh the map for staged changes, then re-stage it.
+codesight update --staged --no-enrich >/dev/null 2>&1 || true
+git add .codesight >/dev/null 2>&1 || true
+`;
+
+async function cmdHook(args) {
+  const projectRoot = resolve(args._[0] || process.cwd());
+  if (args.github) {
+    const dir = join(projectRoot, '.github', 'workflows');
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, 'codesight.yml'), GH_ACTION);
+    process.stdout.write(`\n  wrote .github/workflows/codesight.yml\n  → runs 'codesight update' on every PR and commits the refreshed map\n  (add an ANTHROPIC_API_KEY repo secret — CI has no Claude Code login)\n\n`);
+    return 0;
+  }
+  const hooksDir = git(projectRoot, ['rev-parse', '--git-path', 'hooks']).trim();
+  if (!hooksDir) { process.stderr.write('codesight hook: not a git repo\n'); return 1; }
+  const abs = resolve(projectRoot, hooksDir);
+  mkdirSync(abs, { recursive: true });
+  const hookPath = join(abs, 'pre-commit');
+  writeFileSync(hookPath, PRE_COMMIT);
+  chmodSync(hookPath, 0o755);
+  process.stdout.write(`\n  installed pre-commit hook → ${hookPath}\n  refreshes the structure map for staged files on each commit (fast, no tokens).\n  For AI summaries on PRs use the cloud hook: codesight hook --github\n\n`);
+  return 0;
+}
+
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
   if (!command || command === 'help' || command === '--help' || command === '-h') {
@@ -152,6 +269,8 @@ async function main() {
   }
   if (command in COMMANDS) {
     const args = parseArgs(rest);
+    if (command === 'update') return cmdUpdate(args);
+    if (command === 'hook') return cmdHook(args);
     if (command === 'scan') return cmdScan(args);
     if (command === 'enrich') return cmdEnrich(args);
     if (command === 'build') return cmdBuild(args);
