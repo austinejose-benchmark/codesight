@@ -2,6 +2,8 @@
 // codesight CLI entry. Routes to the scan / enrich / build stages.
 
 import { resolve, join } from 'node:path';
+import { existsSync } from 'node:fs';
+import { spawn } from 'node:child_process';
 
 const COMMANDS = {
   scan: 'extract deterministic structure (tree-sitter) → .codesight/structure.json',
@@ -49,6 +51,31 @@ async function cmdScan(args) {
   return 0;
 }
 
+function openInBrowser(file) {
+  const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
+  spawn(cmd, [file], { stdio: 'ignore', detached: true, shell: process.platform === 'win32' }).unref();
+}
+
+async function cmdBuild(args) {
+  const { scan } = await import('../src/scan/index.mjs');
+  const { build } = await import('../src/assemble/build.mjs');
+  const projectRoot = resolve(args._[0] || process.cwd());
+  const outDir = resolve(args.out || join(projectRoot, '.codesight'));
+  const structurePath = join(outDir, 'structure.json');
+  if (!existsSync(structurePath)) {
+    process.stderr.write('codesight build: no structure yet — scanning first…\n');
+    await scan(projectRoot, outDir);
+  }
+  const htmlOut = resolve(args.o || join(outDir, 'codesight.html'));
+  const { payload } = build(structurePath, outDir, htmlOut);
+  process.stdout.write(
+    `\n  ${payload.overview.name} · ${payload.spine.length} areas · ${payload.files.length} files\n` +
+    `  → ${htmlOut}\n\n`,
+  );
+  if (args.open) openInBrowser(htmlOut);
+  return 0;
+}
+
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
   if (!command || command === 'help' || command === '--help' || command === '-h') {
@@ -62,6 +89,7 @@ async function main() {
   }
   const args = parseArgs(rest);
   if (command === 'scan') return cmdScan(args);
+  if (command === 'build') return cmdBuild(args);
   process.stderr.write(`codesight ${command}: not wired up yet — scaffolding in progress.\n`);
   return 1;
 }
