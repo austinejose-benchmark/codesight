@@ -50,17 +50,32 @@ export async function enrich(projectRoot, outDir, opts = {}) {
   if (todo.length) {
     const provider = await loadProvider(opts);
     const batchSize = opts.batchSize || 8;
-    for (let i = 0; i < todo.length; i += batchSize) {
-      const batch = todo.slice(i, i + batchSize);
-      const results = await provider.summarize(batch);
+    const concurrency = Math.max(1, opts.concurrency || 4);
+    const batches = [];
+    for (let i = 0; i < todo.length; i += batchSize) batches.push(todo.slice(i, i + batchSize));
+
+    let next = 0;
+    let done = 0;
+    const writeBatch = (batch, results) => {
       const byPath = new Map(results.map((r) => [r.path, r]));
       for (const t of batch) {
         const r = byPath.get(t.path) || { summary: '', notes: [] };
+        // Cache each file individually — so even a crashed run keeps the tokens
+        // it already spent (a re-run rebuilds summaries.json from the cache).
         writeFileSync(join(cacheDir, `${t.hash}.json`), JSON.stringify({ summary: r.summary || '', notes: r.notes || [] }));
         summaries[t.path] = { hash: t.hash, summary: r.summary || '', notes: r.notes || [] };
       }
-      if (opts.onProgress) opts.onProgress(Math.min(i + batchSize, todo.length), todo.length);
-    }
+      done += batch.length;
+      if (opts.onProgress) opts.onProgress(done, todo.length);
+    };
+    // Fan the batch calls out concurrently to cut wall-clock time.
+    const worker = async () => {
+      while (next < batches.length) {
+        const batch = batches[next++];
+        writeBatch(batch, await provider.summarize(batch));
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(concurrency, batches.length) }, worker));
   }
 
   writeFileSync(summariesPath, JSON.stringify(summaries, null, 1));
