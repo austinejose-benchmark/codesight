@@ -1,0 +1,17 @@
+{
+  "name": "codesight",
+  "version": "0.1.0",
+  "description": "Turn any repository into an explorable architecture map — free tree-sitter structure plus lean, cached summaries.",
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=20" },
+  "bin": { "codesight": "bin/codesight.mjs" },
+  "files": ["bin", "src", "viewer", "NOTICE"],
+  "scripts": {
+    "codesight": "node bin/codesight.mjs",
+    "test": "node --test test/"
+  },
+  "keywords": ["architecture", "code-map", "tree-sitter", "knowledge-graph", "visualization"],
+  "dependencies": {},
+  "devDependencies": {}
+}

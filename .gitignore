@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.codesight/
+*.log
+.DS_Store
+.env
+.env.*
+codesight.html
