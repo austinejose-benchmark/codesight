@@ -1,0 +1,16 @@
+{
+  "name": "codesight",
+  "owner": { "name": "Austine Jose" },
+  "metadata": {
+    "description": "Benchmark internal Claude Code plugins.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "codesight",
+      "source": ".",
+      "description": "Turn any repository into an explorable architecture map (bundled CLI + /codesight command).",
+      "version": "0.1.0"
+    }
+  ]
+}

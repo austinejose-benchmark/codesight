@@ -1,0 +1,9 @@
+{
+  "name": "codesight",
+  "version": "0.1.0",
+  "description": "Turn any repository into an explorable architecture map — free tree-sitter structure plus lean, cached summaries. Ships the codesight CLI as a bundled /codesight command.",
+  "author": { "name": "Austine Jose" },
+  "homepage": "https://github.com/austinejose-benchmark/codesight",
+  "license": "MIT",
+  "keywords": ["architecture", "code-map", "tree-sitter", "visualization"]
+}
