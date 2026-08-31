@@ -72,7 +72,7 @@ export function assemble(structure, outDir) {
 
   // Spine: the architect's request flow if present, else directory areas.
   const spine = hasArch
-    ? arch.spine.map((s, i) => ({ id: s.id || `stage-${i}`, n: i + 1, title: s.title, blurb: s.blurb || '', files: s.files || [], kind: 'stage' }))
+    ? arch.spine.map((s, i) => ({ id: s.id || `stage-${i}`, n: i + 1, title: s.title, blurb: s.blurb || '', files: s.files || [], diagram: s.diagram || '', kind: 'stage' }))
     : areas.map((a) => ({ id: `area:${a.dir}`, title: a.dir === '(root)' ? 'root' : a.dir, dir: a.dir, kind: a.kind, n: a.n }));
 
   const overview = {
@@ -106,6 +106,8 @@ export function assemble(structure, outDir) {
     hasArch,
     spine,
     domains: (arch && arch.domains) || [],
+    tools: (arch && arch.tools) || [],
+    concerns: (arch && arch.concerns) || [],
     stores: (arch && arch.stores) || [],
     infra: (arch && arch.infra) || [],
     diagram: (arch && arch.diagram) || '',

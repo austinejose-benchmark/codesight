@@ -7,7 +7,7 @@
   --ground:#e9edee;--surface:#ffffff;--surface-2:#f4f7f8;--surface-3:#eaeff1;
   --ink:#111a1d;--ink-soft:#48565c;--ink-faint:#78878d;--line:#d3dbde;--line-soft:#e2e8ea;
   --accent:#b8632b;--accent-ink:#8f4a1d;--accent-fill:rgba(184,99,43,.10);--accent-glow:rgba(184,99,43,.30);
-  --k-file:#3a6ea5;--k-fn:#2f8f6b;--k-class:#7a63c0;--k-domain:#8a5cc4;--k-store:#2b8a9e;--k-flow:#a9791f;--k-step:#9a8534;
+  --k-file:#3a6ea5;--k-fn:#2f8f6b;--k-class:#7a63c0;--k-domain:#8a5cc4;--k-store:#2b8a9e;--k-flow:#a9791f;--k-step:#9a8534;--k-tool:#b5468a;--k-concern:#b3453f;
   --k-code:#3a6ea5;--k-test:#2f8f6b;--k-infra:#b8632b;--k-stage:var(--accent);--k-ov:var(--accent);
   --shadow:0 1px 2px rgba(16,25,28,.06),0 8px 24px rgba(16,25,28,.07);--radius:10px;--radius-sm:7px;
 }
@@ -15,7 +15,7 @@
   --ground:#0d1315;--surface:#141d21;--surface-2:#1a242a;--surface-3:#202c32;
   --ink:#e5edf0;--ink-soft:#9aabb2;--ink-faint:#6b7c83;--line:#26333a;--line-soft:#1e2a30;
   --accent:#e28a4e;--accent-ink:#f0a878;--accent-fill:rgba(226,138,78,.13);--accent-glow:rgba(226,138,78,.36);
-  --k-file:#6fa6d8;--k-fn:#5fc39a;--k-class:#a892e6;--k-domain:#b28ce0;--k-store:#5cc0d3;--k-flow:#d4a94e;--k-step:#c6b163;
+  --k-file:#6fa6d8;--k-fn:#5fc39a;--k-class:#a892e6;--k-domain:#b28ce0;--k-store:#5cc0d3;--k-flow:#d4a94e;--k-step:#c6b163;--k-tool:#d98cc0;--k-concern:#e0857f;
   --k-code:#6fa6d8;--k-test:#5fc39a;--k-infra:#e28a4e;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
 }}
@@ -23,7 +23,7 @@
   --ground:#0d1315;--surface:#141d21;--surface-2:#1a242a;--surface-3:#202c32;
   --ink:#e5edf0;--ink-soft:#9aabb2;--ink-faint:#6b7c83;--line:#26333a;--line-soft:#1e2a30;
   --accent:#e28a4e;--accent-ink:#f0a878;--accent-fill:rgba(226,138,78,.13);--accent-glow:rgba(226,138,78,.36);
-  --k-file:#6fa6d8;--k-fn:#5fc39a;--k-class:#a892e6;--k-domain:#b28ce0;--k-store:#5cc0d3;--k-flow:#d4a94e;--k-step:#c6b163;
+  --k-file:#6fa6d8;--k-fn:#5fc39a;--k-class:#a892e6;--k-domain:#b28ce0;--k-store:#5cc0d3;--k-flow:#d4a94e;--k-step:#c6b163;--k-tool:#d98cc0;--k-concern:#e0857f;
   --k-code:#6fa6d8;--k-test:#5fc39a;--k-infra:#e28a4e;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
 }
@@ -63,11 +63,15 @@ header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:1
 .crumb{font-family:"IBM Plex Mono",monospace;background:none;border:0;padding:3px 6px;border-radius:5px;color:var(--ink-soft);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .crumb:hover{background:var(--surface-3);color:var(--accent-ink)}.crumb.here{color:var(--ink);font-weight:500}.crumb-sep{color:var(--ink-faint);font-size:11px}
 .pbody{padding:18px clamp(16px,2vw,24px) 26px}
-.viewtoggle{display:inline-flex;gap:2px;background:var(--surface-2);border:1px solid var(--line-soft);border-radius:8px;padding:3px;margin-bottom:16px}
-.vt{font-size:12.5px;font-weight:500;border:0;background:none;padding:5px 14px;border-radius:6px;color:var(--ink-soft)}
-.vt.on{background:var(--surface);color:var(--accent-ink);box-shadow:0 1px 2px rgba(16,25,28,.1)}
 .mermaid-holder{overflow-x:auto;background:var(--surface-2);border:1px solid var(--line-soft);border-radius:var(--radius);padding:20px 16px;text-align:center;min-height:120px}
 .mermaid-holder svg{max-width:100%;height:auto}.diag-loading,.diag-err{color:var(--ink-faint);font-size:13px;padding:24px}
+.flownav{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px;padding-top:18px;border-top:1px solid var(--line-soft)}
+.fnav{display:flex;flex-direction:column;gap:2px;min-width:0;max-width:48%;background:var(--surface-2);border:1px solid var(--line-soft);border-radius:var(--radius-sm);padding:9px 14px}
+.fnav:hover{border-color:var(--accent);background:var(--surface-3)}
+.fnav.next{margin-left:auto;text-align:right;align-items:flex-end}
+.fnav-dir{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);font-weight:600}
+.fnav-t{font-size:13.5px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.fnav:hover .fnav-t{color:var(--accent-ink)}
 .kindtag{display:inline-flex;align-items:center;gap:6px;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:600;padding:3px 8px;border-radius:20px;border:1px solid transparent}
 .kindtag::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
 .kt-ov,.kt-area,.kt-stage{color:var(--accent-ink);background:var(--accent-fill);border-color:var(--accent-glow)}
@@ -76,6 +80,8 @@ header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:1
 .kt-class{color:var(--k-class);background:color-mix(in srgb,var(--k-class) 12%,transparent)}
 .kt-domain{color:var(--k-domain);background:color-mix(in srgb,var(--k-domain) 12%,transparent)}
 .kt-flow{color:var(--k-flow);background:color-mix(in srgb,var(--k-flow) 12%,transparent)}
+.kt-tool{color:var(--k-tool);background:color-mix(in srgb,var(--k-tool) 12%,transparent)}
+.kt-concern{color:var(--k-concern);background:color-mix(in srgb,var(--k-concern) 12%,transparent)}
 .kt-store{color:var(--k-store);background:color-mix(in srgb,var(--k-store) 12%,transparent)}
 .kt-infra{color:var(--k-infra);background:color-mix(in srgb,var(--k-infra) 12%,transparent)}
 .detail-head{display:flex;flex-direction:column;gap:10px;margin-bottom:8px}
@@ -101,7 +107,7 @@ header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:1
 .item.leaf,.item.leaf:hover{cursor:default;border-color:var(--line-soft);background:var(--surface-2)}
 .item-marker{flex:none;width:9px;height:9px;border-radius:50%}
 .m-file{background:var(--k-file)}.m-function{background:var(--k-fn)}.m-class{background:var(--k-class)}
-.m-domain{background:var(--k-domain)}.m-flow{background:var(--k-flow)}.m-step{background:var(--k-step)}
+.m-domain{background:var(--k-domain)}.m-flow{background:var(--k-flow)}.m-step{background:var(--k-step)}.m-tool{background:var(--k-tool)}.m-concern{background:var(--k-concern)}
 .item-main{min-width:0;flex:1}
 .item-name{font-family:"IBM Plex Mono",monospace;font-size:13.5px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .item-name.sans{font-family:"IBM Plex Sans",sans-serif}
@@ -148,6 +154,7 @@ const GIT=DATA.git||{};
 const byPath=new Map(DATA.files.map(f=>[f.path,f]));
 const byId=(arr)=>new Map((arr||[]).map(x=>[x.id,x]));
 const stageById=byId(DATA.spine), domainById=byId(DATA.domains), storeById=byId(DATA.stores), infraById=byId(DATA.infra);
+const toolById=byId(DATA.tools), concernById=byId(DATA.concerns);
 const filesByArea=new Map();
 for(const f of DATA.files){ if(!filesByArea.has(f.area))filesByArea.set(f.area,[]); filesByArea.get(f.area).push(f); }
 const esc=s=>(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -182,7 +189,9 @@ function section(sec,items,track){
 section("Start",[{title:"Repository overview",sub:"the whole repo",target:{t:"overview"},kind:"ov"}]);
 if(DATA.hasArch){
   section("Request flow",DATA.spine.map(s=>({title:s.title,num:s.n,target:{t:"stage",id:s.id},kind:"stage"})),true);
+  if(DATA.tools.length) section("Tools",DATA.tools.map(t=>({title:t.name,sub:t.summary,target:{t:"tool",id:t.id},kind:"tool"})));
   if(DATA.domains.length) section("Domains",DATA.domains.map(d=>({title:d.name,sub:(d.files||[]).length+" files",target:{t:"domain",id:d.id},kind:"domain"})));
+  if(DATA.concerns.length) section("Concerns",DATA.concerns.map(c=>({title:c.label,target:{t:"concern",id:c.id},kind:"concern"})));
   if(DATA.stores.length) section("Data stores",DATA.stores.map(s=>({title:s.label,sub:s.kind,target:{t:"store",id:s.id},kind:"store"})));
   if(DATA.infra.length) section("Infrastructure",DATA.infra.map(x=>({title:x.label,target:{t:"infra",id:x.id},kind:"infra"})));
 }
@@ -195,27 +204,21 @@ function paintTrace(){ if(!trackFill)return; const idx=trackStations.findIndex(b
 window.addEventListener("resize",paintTrace);
 
 // ---- panel ----
-let stack=[],viewMode="detail",curDiag=null;
+let stack=[],curDiags=[];
 const crumbsEl=document.getElementById("crumbs"),pbody=document.getElementById("pbody"),panel=document.getElementById("panel");
-function open(t,label){ markActive(keyOf(t));viewMode="detail";
-  const map={overview:"Overview",stage:"stage",domain:"domain",store:"store",infra:"infra",area:"area",file:"file"};
+function open(t,label){ markActive(keyOf(t));
+  const map={overview:"Overview",stage:"stage",domain:"domain",tool:"tool",concern:"concern",store:"store",infra:"infra",area:"area",file:"file"};
   stack=[{kind:t.t,ref:t.id,label:label||map[t.t]}]; render(true); }
-function pushFrame(f){viewMode="detail";stack.push(f);render(false);}
-function gotoCrumb(k){viewMode="detail";stack=stack.slice(0,k+1);render(false);}
+function pushFrame(f){stack.push(f);render(false);}
+function gotoCrumb(k){stack=stack.slice(0,k+1);render(false);}
 function render(scroll){
   crumbsEl.hidden=stack.length===0;crumbsEl.innerHTML="";
   stack.forEach((f,i)=>{ if(i>0){const s=document.createElement("span");s.className="crumb-sep";s.textContent="›";crumbsEl.appendChild(s);}
     const c=document.createElement("button");c.className="crumb"+(i===stack.length-1?" here":"");c.textContent=f.label;
     if(i<stack.length-1)c.addEventListener("click",()=>gotoCrumb(i));crumbsEl.appendChild(c); });
-  const frame=stack[stack.length-1];const def=diagramFor(frame);
-  pbody.innerHTML="";curDiag=null;
-  if(def){ const bar=el('<div class="viewtoggle"><button class="vt" data-m="detail">Detail</button><button class="vt" data-m="diagram">Diagram</button></div>');
-    bar.querySelectorAll(".vt").forEach(btn=>{btn.classList.toggle("on",btn.dataset.m===viewMode);
-      btn.addEventListener("click",()=>{if(viewMode!==btn.dataset.m){viewMode=btn.dataset.m;render(false);}});});
-    pbody.appendChild(bar);
-  } else viewMode="detail";
-  if(viewMode==="diagram"&&def){ const holder=el('<div class="mermaid-holder"></div>');pbody.appendChild(holder);curDiag={def,holder};renderMermaid(def,holder); }
-  else pbody.appendChild(renderFrame(frame));
+  const frame=stack[stack.length-1];
+  pbody.innerHTML="";curDiags=[];
+  pbody.appendChild(renderFrame(frame));
   if(scroll)panel.scrollIntoView({block:"nearest",behavior:"smooth"});
 }
 function head(kind,kl,title,mono,path,summary,gh){ const h=document.createElement("div");h.className="detail-head";
@@ -228,7 +231,8 @@ function sectionEl(title,count){ const s=document.createElement("div");s.classNa
 function item({kind,name,sub,ln,sans,onClick,leaf}){ const b=document.createElement("button");b.className="item"+(leaf?" leaf":"");
   b.innerHTML='<span class="item-marker m-'+kind+'"></span><span class="item-main"><span class="item-name'+(sans?" sans":"")+'">'+esc(name)+'</span>'+(sub?'<span class="item-sub">'+esc(sub)+'</span>':"")+'</span>'+(ln?'<span class="item-ln">'+ln+'</span>':"")+(leaf?"":'<svg class="item-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>');
   if(onClick&&!leaf)b.addEventListener("click",onClick);return b; }
-function fileItem(f){ const nf=f.functions.length; return item({kind:"file",name:base(f.path),sub:f.summary,ln:nf?nf+" fn":"",onClick:()=>pushFrame({kind:"file",ref:f.path,label:base(f.path)})}); }
+function fileRow(f,sub){ const nf=f.functions.length; return item({kind:"file",name:base(f.path),sub:sub!==undefined?sub:f.summary,ln:nf?nf+" fn":"",onClick:()=>pushFrame({kind:"file",ref:f.path,label:base(f.path)})}); }
+function fileItem(f){ return fileRow(f); }
 function filesSection(paths){ const s=sectionEl("Files",paths.length); paths.forEach(p=>{const f=byPath.get(p);if(f)s._list.appendChild(fileItem(f));}); return s; }
 function metaBlock(rows){ const mb=document.createElement("div");mb.className="meta-block";
   rows.forEach(([lbl,arr])=>{ if(arr&&arr.length){const r=document.createElement("div");r.className="meta-row";
@@ -239,6 +243,8 @@ function renderFrame(f){
   if(f.kind==="overview")return renderOverview();
   if(f.kind==="stage")return renderStage(stageById.get(f.ref));
   if(f.kind==="domain")return renderDomain(domainById.get(f.ref));
+  if(f.kind==="tool")return renderTool(toolById.get(f.ref));
+  if(f.kind==="concern")return renderConcern(concernById.get(f.ref));
   if(f.kind==="flow")return renderFlow(f.domainId,f.idx);
   if(f.kind==="store")return renderStore(storeById.get(f.ref));
   if(f.kind==="infra")return renderInfra(infraById.get(f.ref));
@@ -255,6 +261,21 @@ function renderOverview(){
   const mb=metaBlock([["Non-negotiables",o.invariants]]);if(mb)w.appendChild(mb);
   const k=document.createElement("div");k.className="kpis";
   o.stats.forEach(s=>k.appendChild(el('<div class="kpi"><span class="val">'+esc(s.value)+'</span><span class="lab">'+esc(s.label)+'</span></div>')));w.appendChild(k);
+  // Start here — entry points (files of the first request-flow stage).
+  if(DATA.hasArch&&DATA.spine[0]&&(DATA.spine[0].files||[]).length){
+    const eps=DATA.spine[0].files;const sec=sectionEl("Start here",eps.length);
+    eps.forEach(p=>{const f=byPath.get(p);if(f)sec._list.appendChild(fileRow(f));});w.appendChild(sec); }
+  // Read these first — internal files ranked by how many other files import them.
+  const fanIn=new Map();
+  DATA.files.forEach(f=>(f.imports||[]).forEach(ip=>{ if(byPath.has(ip)&&ip!==f.path)fanIn.set(ip,(fanIn.get(ip)||0)+1); }));
+  const ranked=[...fanIn.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8);
+  if(ranked.length){ const sec=sectionEl("Read these first",ranked.length);
+    ranked.forEach(([p,n])=>{const f=byPath.get(p);if(f)sec._list.appendChild(fileRow(f,n+(n===1?" file imports this":" files import this")+(f.summary?" · "+f.summary:"")));});w.appendChild(sec); }
+  // Request flow — the high-level graph, inline (re-renders on theme toggle).
+  if(DATA.diagram){ const sec=sectionEl("Request flow");const holder=el('<div class="mermaid-holder"></div>');
+    sec.replaceChild(holder,sec._list);w.appendChild(sec);addDiagram(DATA.diagram,holder); }
+  if(DATA.tools.length){ const sec=sectionEl("Tools",DATA.tools.length);
+    DATA.tools.forEach(t=>sec._list.appendChild(item({kind:"tool",name:t.name,sub:t.summary,sans:true,ln:(t.files||[]).length?(t.files.length+" files"):"",onClick:()=>open({t:"tool",id:t.id},t.name)})));w.appendChild(sec); }
   if(DATA.domains.length){ const sec=sectionEl("Domains",DATA.domains.length);
     DATA.domains.forEach(d=>sec._list.appendChild(item({kind:"domain",name:d.name,sub:d.summary,sans:true,ln:(d.files||[]).length+" files",onClick:()=>open({t:"domain",id:d.id},d.name)})));w.appendChild(sec); }
   if(o.languages&&o.languages.length){ const s2=sectionEl("Languages");const c=document.createElement("div");c.className="chips";
@@ -263,7 +284,19 @@ function renderOverview(){
 }
 function renderStage(s){ const w=document.createElement("div");
   w.appendChild(head("stage","Stage "+s.n,s.title,false,"",s.blurb));
+  if(s.diagram){ const sec=sectionEl("Stage flow");const holder=el('<div class="mermaid-holder"></div>');
+    sec.replaceChild(holder,sec._list);w.appendChild(sec);addDiagram(s.diagram,holder); }
   if(s.files&&s.files.length)w.appendChild(filesSection(s.files));
+  // Walk the request flow: previous / next stage, in-panel.
+  const idx=DATA.spine.findIndex(x=>x.id===s.id);
+  const prev=idx>0?DATA.spine[idx-1]:null, next=idx>=0&&idx<DATA.spine.length-1?DATA.spine[idx+1]:null;
+  if(prev||next){ const nav=document.createElement("div");nav.className="flownav";
+    const mk=(st,dir,cls)=>{ const b=document.createElement("button");b.className="fnav "+cls;
+      b.innerHTML='<span class="fnav-dir">'+dir+'</span><span class="fnav-t">'+esc(st.n+". "+st.title)+'</span>';
+      b.addEventListener("click",()=>open({t:"stage",id:st.id},st.title));return b; };
+    if(prev)nav.appendChild(mk(prev,"&larr; Previous","prev"));
+    if(next)nav.appendChild(mk(next,"Next &rarr;","next"));
+    w.appendChild(nav); }
   return w; }
 function renderDomain(d){ const w=document.createElement("div");
   w.appendChild(head("domain","Domain",d.name,false,"",d.summary));
@@ -275,10 +308,26 @@ function renderDomain(d){ const w=document.createElement("div");
 function renderFlow(domainId,idx){ const d=domainById.get(domainId);const fl=d.flows[idx];const w=document.createElement("div");
   w.appendChild(head("flow","Business flow",fl.name,false,"",undefined));
   const steps=fl.steps||[];
+  const g=flowDiagram(steps);
+  if(g){ const sec=sectionEl("Flow");const holder=el('<div class="mermaid-holder"></div>');
+    sec.replaceChild(holder,sec._list);w.appendChild(sec);addDiagram(g,holder); }
   if(steps.length){ const s=sectionEl("Steps",steps.length);
     steps.forEach((st,i)=>{ const f=st.file&&byPath.get(st.file);
       s._list.appendChild(item({kind:"step",name:(i+1)+". "+st.name,sub:f?f.summary:"",sans:true,ln:st.file?base(st.file):"",leaf:!f,onClick:f?()=>pushFrame({kind:"file",ref:st.file,label:base(st.file)}):null})); });
     w.appendChild(s); }
+  return w; }
+function renderTool(t){ const w=document.createElement("div");
+  w.appendChild(head("tool","Tool",t.name,true,"",t.summary));
+  if(t.howItWorks){ const n=document.createElement("div");n.className="notes";n.appendChild(el('<div>'+esc(t.howItWorks)+'</div>'));w.appendChild(n); }
+  if(t.diagram){ const sec=sectionEl("How it works");const holder=el('<div class="mermaid-holder"></div>');
+    sec.replaceChild(holder,sec._list);w.appendChild(sec);addDiagram(t.diagram,holder); }
+  const mb=metaBlock([["Inputs",t.inputs],["Rules",t.rules]]);if(mb)w.appendChild(mb);
+  if(t.files&&t.files.length)w.appendChild(filesSection(t.files));
+  return w; }
+function renderConcern(c){ const w=document.createElement("div");
+  w.appendChild(head("concern","Concern",c.label,false,"",c.detail));
+  if(c.diagram){ const sec=sectionEl("How it works");const holder=el('<div class="mermaid-holder"></div>');
+    sec.replaceChild(holder,sec._list);w.appendChild(sec);addDiagram(c.diagram,holder); }
   return w; }
 function renderStore(s){ const w=document.createElement("div");
   w.appendChild(head("store","Data store",s.label,false,esc(s.kind),s.detail));return w; }
@@ -316,20 +365,9 @@ function renderFunc(filePath,fnName){ const f=byPath.get(filePath);const fn=[...
 
 // ---- diagrams ----
 const mlabel=s=>'"'+String(s).replace(/"/g,"'").slice(0,42)+'"';
-function diagramFor(f){
-  if(f.kind==="overview")return DATA.diagram||null;
-  if(f.kind==="file"){ const file=byPath.get(f.ref);const names=new Set(file.functions.map(x=>x.name));
-    const edges=file.calls.filter(c=>names.has(c.caller)&&names.has(c.callee)&&c.caller!==c.callee);
-    if(!edges.length)return null; const id=new Map();let i=0;const nid=n=>{if(!id.has(n))id.set(n,"n"+(i++));return id.get(n);};
-    const L=["flowchart TD"];edges.forEach(e=>L.push("  "+nid(e.caller)+"["+mlabel(e.caller)+"] --> "+nid(e.callee)+"["+mlabel(e.callee)+"]"));return L.join("\n"); }
-  if(f.kind==="function"){ const file=byPath.get(f.file);
-    const outs=[...new Set(file.calls.filter(c=>c.caller===f.fn).map(c=>c.callee))].slice(0,10);
-    const ins=[...new Set(file.calls.filter(c=>c.callee===f.fn).map(c=>c.caller))].slice(0,10);
-    if(!outs.length&&!ins.length)return null; const L=["flowchart LR","  self["+mlabel(f.fn)+"]:::self"];
-    ins.forEach((n,i)=>L.push("  i"+i+"["+mlabel(n)+"] --> self"));outs.forEach((n,i)=>L.push("  self --> o"+i+"["+mlabel(n)+"]"));
-    L.push("  classDef self fill:#b8632b22,stroke:#b8632b,stroke-width:2px;");return L.join("\n"); }
-  return null;
-}
+function flowDiagram(steps){ const s=(steps||[]).filter(x=>x&&x.name); if(s.length<2)return null;
+  const L=["flowchart TD"]; s.forEach((st,i)=>{ L.push("  n"+i+"["+mlabel(st.name)+"]"); if(i)L.push("  n"+(i-1)+" --> n"+i); }); return L.join("\n"); }
+function addDiagram(def,holder){ curDiags.push({def,holder}); renderMermaid(def,holder); }
 async function renderMermaid(def,holder){ holder.innerHTML='<div class="diag-loading">rendering…</div>';
   if(!window.mermaid){holder.innerHTML='<div class="diag-err">Diagram engine unavailable offline.</div>';return;}
   try{ mermaid.initialize({startOnLoad:false,securityLevel:"strict",theme:curTheme()==="dark"?"dark":"neutral",fontFamily:"IBM Plex Sans, sans-serif"});
@@ -341,7 +379,7 @@ const themebtn=document.getElementById("themebtn"),themelabel=document.getElemen
 const sysDark=()=>matchMedia("(prefers-color-scheme:dark)").matches;
 const curTheme=()=>document.documentElement.getAttribute("data-theme")||(sysDark()?"dark":"light");
 const setLabel=()=>themelabel.textContent=curTheme()==="dark"?"Light":"Dark";
-themebtn.onclick=()=>{document.documentElement.setAttribute("data-theme",curTheme()==="dark"?"light":"dark");setLabel();if(curDiag)renderMermaid(curDiag.def,curDiag.holder);paintTrace();};
+themebtn.onclick=()=>{document.documentElement.setAttribute("data-theme",curTheme()==="dark"?"light":"dark");setLabel();curDiags.forEach(d=>renderMermaid(d.def,d.holder));paintTrace();};
 matchMedia("(prefers-color-scheme:dark)").addEventListener("change",setLabel);setLabel();
 open({t:"overview"});
 </script>
