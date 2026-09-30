@@ -9,7 +9,7 @@
 import { createInterface } from 'node:readline';
 import { readFileSync, existsSync } from 'node:fs';
 import { payloadLoader, findMapDir } from '../assemble/load.mjs';
-import { statePathOf } from '../serve/index.mjs';
+import { statePathOf, learnerPathOf } from '../serve/index.mjs';
 import { TOOLS, callTool } from './tools.mjs';
 
 const PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
@@ -19,7 +19,8 @@ const VERSION = '0.1.0';
 const INSTRUCTIONS = `codesight is a map of this codebase plus a live dashboard the user may have open in their browser.
 - Start with get_overview. Use search_map, get_section and get_file before reading source files — they are faster and cheaper.
 - As you explain, drive the dashboard: show(...) the part you are talking about, highlight(...) the files you cite, show_code(...) the exact lines.
-- When a picture helps, or the user asks for one (architecture, user journey, request flow), call show_diagram with mermaid.`;
+- When a picture helps, or the user asks for one (architecture, user journey, request flow), call show_diagram with mermaid.
+- get_overview tells you how the user learns (visual/text, beginner/developer) when their dashboard is open — match it. For "explain simply", call show_simple.`;
 
 // POST one UI command to the running `codesight serve`, if there is one.
 export function makePush(outDir) {
@@ -76,12 +77,18 @@ export function createHandler(ctx) {
   };
 }
 
+// The learner style picked in the dashboard — only while `codesight serve` runs.
+export function readLearner(outDir) {
+  if (!existsSync(statePathOf(outDir)) || !existsSync(learnerPathOf(outDir))) return null;
+  try { return JSON.parse(readFileSync(learnerPathOf(outDir), 'utf8')); } catch { return null; }
+}
+
 // Find the map from `root` (or walk up from it) and serve MCP on stdin/stdout.
 // Resolves when stdin closes (the client went away).
 export function runStdio(root) {
   const found = findMapDir(root);
   const ctx = found
-    ? { payload: payloadLoader(found.outDir), push: makePush(found.outDir) }
+    ? { payload: payloadLoader(found.outDir), push: makePush(found.outDir), learner: () => readLearner(found.outDir) }
     : { payload: () => null, push: async () => ({ ok: false }), missing: `No codesight map found in ${root} or above. Run \`codesight\` in the repo first.` };
   if (!found) process.stderr.write(`codesight mcp: no map found from ${root}\n`);
 

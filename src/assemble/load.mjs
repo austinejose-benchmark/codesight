@@ -6,7 +6,7 @@ import { readFileSync, existsSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { assemble } from './index.mjs';
 
-const MAP_FILES = ['structure.json', 'summaries.json', 'architecture.json'];
+const MAP_FILES = ['structure.json', 'summaries.json', 'architecture.json', 'simple.json', 'diagrams.json', 'quiz.json'];
 
 export function payloadLoader(outDir) {
   const paths = MAP_FILES.map((f) => join(outDir, f));

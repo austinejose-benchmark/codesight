@@ -22,6 +22,8 @@ function printHelp() {
   process.stdout.write('  --open                open the map in your browser\n');
   process.stdout.write('  --no-enrich           structure only, skip the AI summaries\n');
   process.stdout.write('  --no-rescan           reuse an existing scan (skip re-parsing)\n');
+  process.stdout.write('  --no-simple           skip the beginner cards (eli5-style, one cheap Haiku call)\n');
+  process.stdout.write('  --no-quiz             skip the learning-path quiz (one call for new / changed stages)\n');
   process.stdout.write('  --model <name>        summary model (default sonnet)\n');
   process.stdout.write('  --concurrency <n>     parallel summary batches (default 4)\n');
   process.stdout.write('  --paths a,b           only these files\n');
@@ -113,14 +115,21 @@ async function cmdBuild(args) {
 
   // 2b — architecture (rich layer): the flow spine, domains, stores, infra,
   // request diagram. Needs summaries; skippable with --no-arch.
+  let archOk = false;
   if (enriched && !args['no-arch']) {
     try {
       process.stderr.write('  inferring architecture…\n');
       await architect(projectRoot, outDir, enrichOpts(args));
+      archOk = true;
     } catch (err) {
       process.stderr.write(`  (no architecture layer: ${String(err?.message || err).split('\n')[0]})\n`);
     }
   }
+
+  // 2c — beginner cards: one eli5-style card per section. Needs the architecture.
+  if (archOk && !args['no-simple']) await makeSimpleCards(outDir, args);
+  // 2d — learning-path quiz: key code + questions per stage. Needs the architecture.
+  if (archOk && !args['no-quiz']) await makeQuizzes(outDir, args);
 
   // 3 — assemble the viewer.
   const htmlOut = resolve(args.o || join(outDir, 'codesight.html'));
@@ -134,6 +143,30 @@ async function cmdBuild(args) {
   );
   if (args.open) openInBrowser(htmlOut);
   return 0;
+}
+
+// Cards cost one small call and only for new / changed sections; never fatal.
+async function makeSimpleCards(outDir, args) {
+  const { explainSimple } = await import('../src/explain/simple.mjs');
+  try {
+    process.stderr.write('  making beginner cards…\n');
+    // Cards use their own small default model (Haiku); --model is for summaries.
+    const r = await explainSimple(outDir, { provider: typeof args.provider === 'string' ? args.provider : undefined, force: !!args.force });
+    if (r.made) process.stderr.write(`  ${r.made} card(s) made, ${r.reused} cached\n`);
+  } catch (err) {
+    process.stderr.write(`  (no beginner cards: ${String(err?.message || err).split('\n')[0]})\n`);
+  }
+}
+
+async function makeQuizzes(outDir, args) {
+  const { makeQuiz } = await import('../src/explain/quiz.mjs');
+  try {
+    process.stderr.write('  writing the learning-path quiz…\n');
+    const r = await makeQuiz(outDir, { provider: typeof args.provider === 'string' ? args.provider : undefined, force: !!args.force });
+    if (r.made) process.stderr.write(`  ${r.made} stage quiz(zes) made, ${r.reused} cached\n`);
+  } catch (err) {
+    process.stderr.write(`  (no quiz: ${String(err?.message || err).split('\n')[0]})\n`);
+  }
 }
 
 async function cmdEnrich(args) {
@@ -191,7 +224,12 @@ async function cmdUpdate(args) {
     }
   }
   if (args.arch) {
-    try { process.stderr.write('  re-inferring architecture…\n'); await architect(projectRoot, outDir, enrichOpts(args)); } catch { /* keep cached */ }
+    try {
+      process.stderr.write('  re-inferring architecture…\n');
+      await architect(projectRoot, outDir, enrichOpts(args));
+      if (!args['no-simple']) await makeSimpleCards(outDir, args);
+      if (!args['no-quiz']) await makeQuizzes(outDir, args);
+    } catch { /* keep cached */ }
   }
 
   const htmlOut = resolve(args.o || join(outDir, 'codesight.html'));

@@ -61,6 +61,9 @@ function readJSON(p) {
 export function assemble(structure, outDir) {
   const summaries = readJSON(join(outDir, 'summaries.json')) || {};
   const arch = readJSON(join(outDir, 'architecture.json')); // rich layer, may be null
+  const simple = readJSON(join(outDir, 'simple.json')) || {};   // beginner cards (src/explain/simple.mjs)
+  const drawn = readJSON(join(outDir, 'diagrams.json')) || {};  // "Draw this" diagrams (src/explain/draw.mjs)
+  const quiz = readJSON(join(outDir, 'quiz.json')) || {};       // learning-path quiz (src/explain/quiz.mjs)
 
   const { areas, keyOf } = inferAreas(structure.files);
   const files = structure.files.map((f) => {
@@ -111,6 +114,9 @@ export function assemble(structure, outDir) {
     stores: (arch && arch.stores) || [],
     infra: (arch && arch.infra) || [],
     diagram: (arch && arch.diagram) || '',
+    simple: Object.fromEntries(Object.entries(simple).map(([k, c]) => [k, { analogy: c.analogy, steps: c.steps }])),
+    drawn: Object.fromEntries(Object.entries(drawn).map(([k, d]) => [k, { kind: d.kind, title: d.title, mermaid: d.mermaid }])),
+    quiz: Object.fromEntries(Object.entries(quiz).map(([k, q]) => [k, { keyCode: q.keyCode, questions: q.questions, open: q.open }])),
     files,
   };
 }

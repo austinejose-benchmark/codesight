@@ -1,7 +1,17 @@
 // Provider selection, shared by enrich and architect. Default: the user's own
 // Claude Code (`claude` CLI) — no API key. Fallback: the Anthropic API.
 
-export async function loadProvider(opts = {}) {
+// One provider per (name, model) for the life of the process: long-running
+// `serve` calls this on every draw / grade, and the checks below spawn processes.
+const loaded = new Map();
+
+export function loadProvider(opts = {}) {
+  const key = `${opts.provider || ''}|${opts.model || ''}`;
+  if (!loaded.has(key)) loaded.set(key, pickProvider(opts).catch((err) => { loaded.delete(key); throw err; }));
+  return loaded.get(key);
+}
+
+async function pickProvider(opts) {
   let name = opts.provider;
   if (!name) {
     const cli = await import('./claude-cli.mjs');

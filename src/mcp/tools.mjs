@@ -3,19 +3,23 @@
 //          the repo: fewer steps, fewer tokens, faster answers.
 //   show — drive the user's live dashboard, so it follows the explanation.
 //
-// Pure over a context: { payload: () => payload, push: async (cmd) => result }.
-// `push` sends a UI command to `codesight serve` (see src/mcp/index.mjs).
+// Pure over a context: { payload: () => payload, push: async (cmd) => result,
+// learner?: () => { style, level } | null }. `push` sends a UI command to
+// `codesight serve` (see src/mcp/index.mjs).
 
 import { rankByWords } from '../assemble/search.mjs';
 import { importersOf, impactOf } from '../assemble/imports.mjs';
+import { DIAGRAM_KINDS as KINDS, MERMAID_START } from '../explain/draw.mjs';
 
 const SECTION_KINDS = ['stage', 'tool', 'domain', 'concern', 'store', 'infra'];
 const SHOW_KINDS = [...SECTION_KINDS, 'area', 'file', 'overview'];
-const DIAGRAM_KINDS = ['architecture', 'workflow', 'sequence', 'dataflow', 'lifecycle'];
-const MERMAID_START = /^\s*(flowchart|graph|sequenceDiagram|stateDiagram(-v2)?|classDiagram|erDiagram|journey|gantt|mindmap|timeline)\b/;
+const DIAGRAM_KINDS = Object.keys(KINDS);
 const MAX_MERMAID = 20_000;
+const MIN_STEPS = 2;
+const MAX_STEPS = 5;
 const SEARCH_LIMIT = 12;
 const HIGHLIGHT_LIMIT = 40;
+const MAX_RANGES = 10;
 
 const obj = (properties, required = []) => ({ type: 'object', properties, required, additionalProperties: false });
 const str = (description, extra = {}) => ({ type: 'string', description, ...extra });
@@ -53,13 +57,23 @@ export const TOOLS = [
   },
   {
     name: 'highlight',
-    description: "Mark the files your answer is about on the user's dashboard. Call it with the files you cite.",
-    inputSchema: obj({ paths: { type: 'array', items: { type: 'string' }, description: 'Repo-relative file paths' }, note: str('One short line: why these files') }, ['paths']),
+    description: "Mark the files your answer is about on the user's dashboard. Call it with the files you cite. Add `lines` for the exact ranges you cite — the dashboard marks them whenever that file's code is opened.",
+    inputSchema: obj({
+      paths: { type: 'array', items: { type: 'string' }, description: 'Repo-relative file paths' },
+      lines: { type: 'array', items: obj({ path: str('Repo-relative path'), start: { type: 'number' }, end: { type: 'number' } }, ['path', 'start']), description: 'Optional: exact line ranges you cite' },
+      note: str('One short line: why these files'),
+    }),
   },
   {
     name: 'show_code',
-    description: "Show exact lines of a file on the user's dashboard, with the range highlighted. Call it when you point at specific code.",
-    inputSchema: obj({ path: str('Repo-relative path'), start: { type: 'number', description: 'First line (1-based)' }, end: { type: 'number', description: 'Last line' }, note: str('One short line: what to look at') }, ['path', 'start']),
+    description: "Show a file's code on the user's dashboard with the lines you mean highlighted. Give start/end for one range, or `ranges` for several in the same file.",
+    inputSchema: obj({
+      path: str('Repo-relative path'),
+      start: { type: 'number', description: 'First line (1-based)' },
+      end: { type: 'number', description: 'Last line' },
+      ranges: { type: 'array', items: obj({ start: { type: 'number' }, end: { type: 'number' } }, ['start']), description: `Several ranges instead of start/end (max ${MAX_RANGES})` },
+      note: str('One short line: what to look at'),
+    }, ['path']),
   },
   {
     name: 'show_diagram',
@@ -70,7 +84,31 @@ export const TOOLS = [
       mermaid: str('Mermaid source: flowchart, sequenceDiagram, stateDiagram-v2, journey, …'),
     }, ['kind', 'title', 'mermaid']),
   },
+  {
+    name: 'show_simple',
+    description: "Show a beginner card on the user's dashboard: one everyday comparison plus 3–4 picture steps. Use when the user asks to \"explain simply\" or is a beginner learner. Plain words only — no jargon.",
+    inputSchema: obj({
+      title: str('What the card explains, e.g. "How entitlements work"'),
+      analogy: str('One everyday comparison, at most 20 words, starting with "Like"'),
+      steps: {
+        type: 'array',
+        minItems: MIN_STEPS,
+        maxItems: MAX_STEPS,
+        description: 'The steps in order',
+        items: obj({ icon: str('One emoji that pictures the step'), text: str('At most 10 plain words') }, ['icon', 'text']),
+      },
+    }, ['title', 'analogy', 'steps']),
+  },
 ];
+
+// [[start, end], ...] from { start, end } objects — 1-based, end ≥ start, bad ones dropped.
+function toRanges(list) {
+  return (Array.isArray(list) ? list : []).slice(0, MAX_RANGES).flatMap((r) => {
+    const start = Math.floor(Number(r && r.start));
+    if (!(start >= 1)) return [];
+    return [[start, Math.max(start, Math.floor(Number(r.end)) || start)]];
+  });
+}
 
 const ok = (data) => ({ text: typeof data === 'string' ? data : JSON.stringify(data) });
 const fail = (text) => ({ text, isError: true });
@@ -82,9 +120,19 @@ function sectionList(p, kind) {
 const sectionName = (x) => x.name || x.title || x.label || x.id;
 const idHint = (p, kind) => `Known ${kind} ids: ${sectionList(p, kind).map((x) => x.id).join(', ') || '(none)'}`;
 
-function overview(p) {
+// How the learner likes to learn → how the agent should answer.
+const LEARNER_TIPS = {
+  visual: 'Visual learner: draw often with show_diagram, and keep text short.',
+  text: 'Text learner: explain in clear written steps; draw only when asked.',
+  beginner: 'Beginner: plain words, everyday comparisons, and show_simple cards. Explain every technical term.',
+  developer: 'Developer: be precise and technical; point at exact code with show_code.',
+};
+export const learnerTips = (l) => (l ? `${LEARNER_TIPS[l.style] || ''} ${LEARNER_TIPS[l.level] || ''}`.trim() : '');
+
+function overview(p, learner) {
   const o = p.overview;
   return {
+    ...(learner ? { learner: { ...learner, tips: learnerTips(learner) } } : {}),
     project: o.name,
     purpose: o.description,
     rules: o.invariants,
@@ -146,7 +194,7 @@ export async function callTool(name, args = {}, ctx) {
 
   switch (name) {
     case 'get_overview':
-      return ok(overview(p));
+      return ok(overview(p, ctx.learner?.()));
 
     case 'search_map': {
       if (!args.query) return fail('query is required');
@@ -157,7 +205,10 @@ export async function callTool(name, args = {}, ctx) {
 
     case 'get_section': {
       const x = sectionList(p, args.kind).find((s) => s.id === args.id);
-      return x ? ok({ kind: args.kind, ...x }) : fail(`No ${args.kind} "${args.id}". ${idHint(p, args.kind)}`);
+      if (!x) return fail(`No ${args.kind} "${args.id}". ${idHint(p, args.kind)}`);
+      const simple = p.simple?.[`${args.kind}:${args.id}`];
+      const drawn = Object.keys(p.drawn || {}).filter((k) => k.startsWith(`${args.kind}:${args.id}:`)).map((k) => k.split(':').pop());
+      return ok({ kind: args.kind, ...x, ...(simple ? { simple } : {}), ...(drawn.length ? { drawnDiagrams: drawn } : {}) });
     }
 
     case 'get_file': {
@@ -183,16 +234,23 @@ export async function callTool(name, args = {}, ctx) {
     }
 
     case 'highlight': {
-      const paths = [...new Set((args.paths || []).filter(hasFile))].slice(0, HIGHLIGHT_LIMIT);
+      const lines = (Array.isArray(args.lines) ? args.lines : [])
+        .filter((l) => l && hasFile(l.path))
+        .flatMap((l) => toRanges([l]).map(([start, end]) => ({ path: l.path, start, end })))
+        .slice(0, HIGHLIGHT_LIMIT);
+      const paths = [...new Set([...(args.paths || []).filter(hasFile), ...lines.map((l) => l.path)])].slice(0, HIGHLIGHT_LIMIT);
       if (!paths.length) return fail('None of those paths are in the map. Use repo-relative paths from search_map / get_file.');
-      return pushed(ctx, { type: 'highlight', paths, note: String(args.note || '').slice(0, 200) }, `Highlighted ${paths.length} file(s)`);
+      const cmd = { type: 'highlight', paths, note: String(args.note || '').slice(0, 200) };
+      if (lines.length) cmd.lines = lines;
+      return pushed(ctx, cmd, `Highlighted ${paths.length} file(s)${lines.length ? ` and ${lines.length} line range(s)` : ''}`);
     }
 
     case 'show_code': {
       if (!hasFile(args.path)) return fail(`"${args.path}" is not in the map. Try search_map.`);
-      const start = Math.max(1, Math.floor(Number(args.start) || 1));
-      const end = Math.max(start, Math.floor(Number(args.end) || start));
-      return pushed(ctx, { type: 'code', path: args.path, start, end, note: String(args.note || '').slice(0, 200) }, `Showing ${args.path}:${start}-${end}`);
+      const ranges = toRanges(Array.isArray(args.ranges) && args.ranges.length ? args.ranges : [{ start: args.start, end: args.end }]);
+      if (!ranges.length) return fail('give start (and end), or ranges: [{ start, end }]');
+      const label = ranges.map(([a, b]) => (b > a ? `${a}-${b}` : `${a}`)).join(', ');
+      return pushed(ctx, { type: 'code', path: args.path, ranges, note: String(args.note || '').slice(0, 200) }, `Showing ${args.path}:${label}`);
     }
 
     case 'show_diagram': {
@@ -201,6 +259,16 @@ export async function callTool(name, args = {}, ctx) {
       if (!MERMAID_START.test(mermaid)) return fail('mermaid must start with a diagram type, e.g. "flowchart TD", "sequenceDiagram", "stateDiagram-v2" or "journey".');
       if (mermaid.length > MAX_MERMAID) return fail(`mermaid is too long (max ${MAX_MERMAID} chars) — simplify the diagram.`);
       return pushed(ctx, { type: 'diagram', kind: args.kind, title: String(args.title || args.kind).slice(0, 120), mermaid }, `Drew "${args.title}"`);
+    }
+
+    case 'show_simple': {
+      const steps = (Array.isArray(args.steps) ? args.steps : [])
+        .filter((st) => st && typeof st.text === 'string' && st.text.trim())
+        .slice(0, MAX_STEPS)
+        .map((st) => ({ icon: String(st.icon || '•').trim().slice(0, 8), text: st.text.trim().slice(0, 120) }));
+      if (!args.title || !args.analogy) return fail('title and analogy are required');
+      if (steps.length < MIN_STEPS) return fail(`give ${MIN_STEPS}–${MAX_STEPS} steps, each { icon, text }`);
+      return pushed(ctx, { type: 'simple', title: String(args.title).slice(0, 120), analogy: String(args.analogy).slice(0, 200), steps }, `Showed the card "${args.title}"`);
     }
 
     default:

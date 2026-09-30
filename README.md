@@ -64,7 +64,48 @@ Keep asking questions in Claude Code (or Codex) as normal. The dashboard reacts:
    sequence, data flow, lifecycle).
 
 Also in the dashboard: **⌘K** (or `/`) searches every file, function, tool and
-stage instantly, and "Show code" opens the real code inline.
+stage instantly, and "Show code" opens the real code inline — with syntax colours,
+function starts marked, and the lines Claude cites highlighted (far-apart ranges fold
+the lines between them, like GitHub).
+
+### Learn your way
+
+On first open the dashboard asks **how you learn best**. You can change it any time from the header:
+
+| | What changes |
+|---|---|
+| **Visual** | Diagrams first. Longer text folds under "Read more". |
+| **Text** | Words first. Diagrams wait behind a "Show diagram" button. |
+| **Beginner** | Every tool, stage, concern and domain opens with a simple card: one everyday comparison + 3–4 picture steps. |
+| **Developer** | The card folds to "Explain simply". |
+
+- **Simple cards** are made in every `codesight` run, after the architect: one small
+  Haiku call, cached per section in `.codesight/simple.json` (commit it). Skip with `--no-simple`.
+- **Draw this**: on each tool / stage / concern / domain, ask for an Architecture,
+  User journey, Sequence, Data flow or Lifecycle diagram. `codesight serve` asks
+  Claude under your login (a few seconds), then caches it in `.codesight/diagrams.json`
+  (commit it) — instant for you and your teammates after that.
+- Your style reaches the agent too: `get_overview` returns it, and the prompt hook adds
+  one short line per prompt while the dashboard runs, so Claude draws more for visual
+  learners and uses plain words and `show_simple` cards for beginners.
+
+### Learning path + quiz
+
+The overview offers **"Learn this repo in about 30 minutes"**: the request-flow stages
+in order. Each step shows the simple card, the diagram, the **key code** (one function,
+highlighted), then a short quiz:
+
+- **2 multiple-choice questions** — checked in the browser, instantly, 0 tokens. Every
+  option explains why it is right or wrong.
+- **Explain it back** — write it in your own words; Claude checks it against the key
+  points in a few seconds (needs `codesight serve`).
+
+Progress and scores are saved in your browser; the finish page lists the steps worth
+another look. The quiz is made in every `codesight` run after the cards, cached per
+stage in `.codesight/quiz.json` (commit it). Skip with `--no-quiz`.
+
+codesight's own model calls run `claude -p` in a lean mode (no MCP servers, plugins,
+hooks, or thinking). The beginner-card pass went from 120 s to 15 s.
 
 With jev, only your question and the map's names/summaries leave the machine —
 never code. The server listens on `127.0.0.1` only.

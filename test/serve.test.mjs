@@ -12,7 +12,14 @@ import { makeFixture, sseClient, STRUCTURE } from './helpers.mjs';
 
 const { root, outDir } = makeFixture();
 let s;
-before(async () => { s = await startServer({ projectRoot: root, outDir, port: 0, apiKey: '' }); });
+let drawCalls = 0;
+// One fake model for the server: draws, and grades "explain it back" answers.
+const complete = async ({ system }) => {
+  if (/grade/.test(system)) return '{"got":[1],"feedback":"Nice start."}';
+  drawCalls++;
+  return 'flowchart LR\n  api --> db';
+};
+before(async () => { s = await startServer({ projectRoot: root, outDir, port: 0, apiKey: '', complete }); });
 after(async () => { await s.close(); });
 
 const post = (path, body, headers = { 'content-type': 'application/json' }) =>
@@ -87,6 +94,52 @@ test('prompt hook: forwards the prompt, prints nothing, exits 0', async () => {
   const msg = await sse.next();
   assert.deepEqual(msg.target, { t: 'concern', id: 'entitlements' });
   sse.close();
+});
+
+test('POST /api/learner: stores the style for the agent, rejects junk', async () => {
+  assert.equal((await post('/api/learner', { style: 'loud', level: 'beginner' })).status, 400);
+  const r = await (await post('/api/learner', { style: 'visual', level: 'beginner' })).json();
+  assert.equal(r.learner.style, 'visual');
+  assert.match(r.learner.tips, /show_diagram/);
+  assert.match(r.learner.tips, /show_simple/);
+  assert.equal((await (await fetch(`${s.url}/api/state`)).json()).learner.level, 'beginner');
+});
+
+test('prompt hook: prints the learner line once a style is picked', async () => {
+  await post('/api/learner', { style: 'text', level: 'developer' });
+  const hook = fileURLToPath(new URL('../scripts/codesight-route.mjs', import.meta.url));
+  const cp = spawn(process.execPath, [hook], { stdio: ['pipe', 'pipe', 'pipe'] });
+  let out = '';
+  cp.stdout.on('data', (d) => { out += d; });
+  cp.stdin.end(JSON.stringify({ prompt: 'what is this repo', cwd: root }));
+  assert.equal(await new Promise((ok) => cp.on('close', ok)), 0);
+  assert.match(out, /^codesight: the user's live dashboard is open/);
+  assert.match(out, /Text learner/);
+  assert.match(out, /Developer/);
+});
+
+test('POST /api/draw: draws once, then serves it from the cache', async () => {
+  const body = { target: { t: 'stage', id: 'query' }, kind: 'dataflow' };
+  const a = await (await post('/api/draw', body)).json();
+  assert.equal(a.cached, false);
+  assert.equal(a.mermaid, 'flowchart LR\n  api --> db');
+  const b = await (await post('/api/draw', body)).json();
+  assert.equal(b.cached, true);
+  assert.equal(drawCalls, 1);
+  assert.equal((await post('/api/draw', { target: { t: 'stage', id: 'nope' }, kind: 'dataflow' })).status, 400);
+  // the next page load has it too, so the viewer shows it instantly
+  assert.match(await (await fetch(s.url)).text(), /"stage:query:dataflow"/);
+});
+
+test('POST /api/grade: grades against the stage quiz', async () => {
+  const { makeQuiz } = await import('../src/explain/quiz.mjs');
+  await makeQuiz(outDir, { complete: async ({ user }) => JSON.stringify(user.split('\n').filter((l) => l.startsWith('{')).map((l) => JSON.parse(l)).map((st) => ({
+    key: st.key, questions: [{ q: 'Why?', options: ['a', 'b', 'c'], answer: 1, why: ['', '', ''] }], open: { q: 'Explain it.', points: ['one', 'two'] },
+  }))) });
+  const g = await (await post('/api/grade', { stage: 'auth', answer: 'It checks the token.' })).json();
+  assert.deepEqual([g.score, g.of, g.feedback], [1, 2, 'Nice start.']);
+  assert.equal((await post('/api/grade', { stage: 'auth', answer: '' })).status, 400);
+  assert.match(await (await fetch(s.url)).text(), /"stage:auth":\{"keyCode"/); // the page carries the quiz
 });
 
 test('prompt hook: no server for this repo → exits 0 quietly', async () => {

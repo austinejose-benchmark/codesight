@@ -11,8 +11,15 @@ import { join, resolve, sep } from 'node:path';
 import { payloadLoader } from '../assemble/load.mjs';
 import { renderHtml } from '../assemble/build.mjs';
 import { route, decide, SUGGEST_AT } from './route.mjs';
+import { draw } from '../explain/draw.mjs';
+import { grade } from '../explain/quiz.mjs';
+import { learnerTips } from '../mcp/tools.mjs';
 
 export const statePathOf = (outDir) => join(outDir, 'tmp', 'serve.json');
+// The learner's style, as picked in the dashboard. A file (not an endpoint) so
+// the prompt hook can read it without waiting on the network.
+export const learnerPathOf = (outDir) => join(outDir, 'tmp', 'learner.json');
+export const LEARNER = { style: ['visual', 'text'], level: ['beginner', 'developer'] };
 
 export const DEFAULT_PORT = 4747;
 const PORT_TRIES = 10;
@@ -21,7 +28,7 @@ const MAX_CODE_LINES = 400;
 const HEARTBEAT_MS = 25_000;
 const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost']);
 // UI commands the dashboard understands (see the "live" section of viewer/template.html).
-export const COMMANDS = new Set(['open', 'highlight', 'code', 'diagram', 'suggest']);
+export const COMMANDS = new Set(['open', 'highlight', 'code', 'diagram', 'simple', 'suggest']);
 
 const sendJson = (res, status, obj) => {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
@@ -55,9 +62,12 @@ export function readCode(projectRoot, payload, path, start, end) {
   return { path, start: s, end: e, total: all.length, lines: all.slice(s - 1, e) };
 }
 
-export async function startServer({ projectRoot, outDir, port = DEFAULT_PORT, apiKey = process.env.TYPESAFE_API_KEY, log = () => {} }) {
+// `complete` / `model`: the model call used by "Draw this" (injected in tests;
+// default is the enrich provider — the user's Claude Code login).
+export async function startServer({ projectRoot, outDir, port = DEFAULT_PORT, apiKey = process.env.TYPESAFE_API_KEY, complete, model, log = () => {} }) {
   const load = payloadLoader(outDir);
   const clients = new Set();
+  let learner = null;
 
   const broadcast = (cmd) => {
     const frame = `data: ${JSON.stringify(cmd)}\n\n`;
@@ -87,7 +97,7 @@ export async function startServer({ projectRoot, outDir, port = DEFAULT_PORT, ap
       return undefined;
     }
     if (req.method === 'GET' && url.pathname === '/api/state') {
-      return sendJson(res, 200, { project: load().project.name, clients: clients.size, router: apiKey ? 'jev' : 'local' });
+      return sendJson(res, 200, { project: load().project.name, clients: clients.size, router: apiKey ? 'jev' : 'local', learner });
     }
     if (req.method === 'GET' && url.pathname === '/api/code') {
       const code = readCode(projectRoot, load(), url.searchParams.get('path') || '', url.searchParams.get('start'), url.searchParams.get('end'));
@@ -116,6 +126,35 @@ export async function startServer({ projectRoot, outDir, port = DEFAULT_PORT, ap
       const ms = Date.now() - started;
       log(`route ${ms}ms ${r.by} → ${action}${r.target ? ` ${r.target.t}:${r.target.id} (${r.confidence.toFixed(2)})` : ''}`);
       return sendJson(res, 200, { ...r, action, ms });
+    }
+    if (url.pathname === '/api/learner') {
+      if (!LEARNER.style.includes(body.style) || !LEARNER.level.includes(body.level)) return sendJson(res, 400, { error: 'style: visual|text, level: beginner|developer' });
+      learner = { style: body.style, level: body.level, tips: learnerTips(body) };
+      mkdirSync(join(outDir, 'tmp'), { recursive: true });
+      writeFileSync(learnerPathOf(outDir), JSON.stringify(learner));
+      return sendJson(res, 200, { ok: true, learner });
+    }
+    if (url.pathname === '/api/grade') {
+      const started = Date.now();
+      try {
+        const g = await grade(load(), body.stage, body.answer, { complete, level: learner?.level });
+        log(`grade ${Date.now() - started}ms stage:${body.stage} ${g.score}/${g.of}`);
+        return sendJson(res, 200, { ...g, ms: Date.now() - started });
+      } catch (err) {
+        log(`grade failed: ${err.message}`);
+        return sendJson(res, err.status || 502, { error: err.message });
+      }
+    }
+    if (url.pathname === '/api/draw') {
+      const started = Date.now();
+      try {
+        const d = await draw(outDir, load(), body.target, body.kind, { complete, model, force: Boolean(body.force) });
+        log(`draw ${Date.now() - started}ms ${d.cached ? 'cached' : 'drawn'} ${body.target?.t}:${body.target?.id} ${body.kind}`);
+        return sendJson(res, 200, { kind: d.kind, title: d.title, mermaid: d.mermaid, cached: d.cached, ms: Date.now() - started });
+      } catch (err) {
+        log(`draw failed: ${err.message}`);
+        return sendJson(res, err.status || 502, { error: err.message });
+      }
     }
     return sendJson(res, 404, { error: 'not found' });
   }

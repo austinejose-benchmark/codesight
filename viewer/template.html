@@ -1,7 +1,8 @@
 <title>__CS_TITLE__</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'"><!-- loads in the background: a stylesheet would otherwise hold back the page script -->
 <style>
 :root{
   --ground:#e9edee;--surface:#ffffff;--surface-2:#f4f7f8;--surface-3:#eaeff1;
@@ -28,6 +29,7 @@
   --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{background:var(--ground);color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;margin:0}
 h1,h2,h3{margin:0;text-wrap:balance}button{font-family:inherit;color:inherit;cursor:pointer}
 a{color:var(--accent-ink)}::selection{background:var(--accent-glow)}
@@ -139,11 +141,28 @@ button.chip:hover{border-color:var(--accent);color:var(--accent-ink)}
 .item.hl{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
 button.ghlink{cursor:pointer}
-.codebox{margin-top:16px;border:1px solid var(--line-soft);border-radius:var(--radius);background:var(--surface-2);max-height:65vh;overflow:auto;font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.6;padding:8px 0}
+.codebox{position:relative;margin-top:16px;border:1px solid var(--line-soft);border-radius:var(--radius);background:var(--surface-2);max-height:65vh;overflow:auto;font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.6;padding:8px 0}
 .codebox .cl{display:flex;white-space:pre;padding-right:14px}
 .codebox .cn{flex:none;width:56px;padding-right:14px;text-align:right;color:var(--ink-faint);user-select:none}
 .codebox .cl.on{background:var(--accent-fill)}.codebox .cl.on .cn{color:var(--accent-ink);box-shadow:inset 3px 0 0 var(--accent)}
+.codebox .cc{color:var(--ink)}
+/* a function / class starts on this line (tooltip names it) */
+.codebox .cl.def .cn::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--k-fn);margin-right:7px;vertical-align:1px}
+.codebox .cl.def.cls .cn::before{background:var(--k-class)}
+.code-more{margin-top:8px}
+.codebox .gap{display:block;width:100%;text-align:left;border:0;border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);background:var(--surface-3);color:var(--ink-faint);font:inherit;font-size:11.5px;padding:3px 0 3px 70px;margin:2px 0}
+.codebox .gap:hover{color:var(--accent-ink)}
+/* syntax colours (highlight.js classes) from the page's own tokens, so both themes work */
+.cc .hljs-keyword,.cc .hljs-selector-tag,.cc .hljs-built_in{color:var(--k-class)}
+.cc .hljs-string,.cc .hljs-regexp,.cc .hljs-template-tag,.cc .hljs-addition{color:var(--k-fn)}
+.cc .hljs-number,.cc .hljs-literal,.cc .hljs-symbol,.cc .hljs-bullet{color:var(--accent-ink)}
+.cc .hljs-title,.cc .hljs-section,.cc .hljs-name{color:var(--k-file)}
+.cc .hljs-type,.cc .hljs-title.class_{color:var(--k-store)}
+.cc .hljs-comment,.cc .hljs-quote{color:var(--ink-faint);font-style:italic}
+.cc .hljs-meta,.cc .hljs-attr,.cc .hljs-attribute,.cc .hljs-property,.cc .hljs-selector-class{color:var(--k-flow)}
+.cc .hljs-deletion{color:var(--k-concern)}
 .kt-diagram{color:var(--k-flow);background:color-mix(in srgb,var(--k-flow) 12%,transparent)}
+.kt-step{color:var(--k-step);background:color-mix(in srgb,var(--k-step) 12%,transparent)}
 /* search palette (Cmd+K or /) */
 .pal{position:fixed;inset:0;background:rgba(10,16,18,.45);display:flex;justify-content:center;align-items:flex-start;padding:12vh 16px 16px;z-index:50}
 .pal[hidden]{display:none}
@@ -156,6 +175,64 @@ button.ghlink{cursor:pointer}
 .pal-sub{font-size:12px;color:var(--ink-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
 .pal-kind{flex:none;font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em}
 .pal-empty{padding:14px;color:var(--ink-faint);font-size:13px}
+/* learner style (Text / Visual, Beginner / Developer) — see "learner" in the script */
+.frame{display:flex;flex-direction:column}
+.frame>.detail-head{order:-3}.frame>.simple-card{order:-2}
+:root[data-style="visual"] .frame>.sec-diagram{order:-1}
+:root[data-style="visual"] .frame>.sec-diagram .mermaid-holder{padding:26px 18px}
+.diag-fold{display:flex;justify-content:center}
+details.more{margin-top:14px}
+details.more>summary,.simple-card>summary{cursor:pointer;list-style:none;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+details.more>summary::-webkit-details-marker,.simple-card>summary::-webkit-details-marker{display:none}
+details.more>summary::before,.simple-card>summary::before{content:"+ ";color:var(--accent)}
+details.more[open]>summary::before,.simple-card[open]>summary::before{content:"\2212  "}
+.simple-card{margin-top:16px;border:1px solid var(--line-soft);border-radius:var(--radius);background:var(--surface-2);padding:13px 16px}
+.simple-card[open]{padding-bottom:16px}
+.sc-analogy{margin-top:12px;font-size:17px;line-height:1.45;font-weight:500;color:var(--ink);max-width:62ch}
+.sc-steps{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;counter-reset:sc}
+.sc-steps li{counter-increment:sc;background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--radius-sm);padding:12px 12px 14px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;font-size:13.5px;line-height:1.4;color:var(--ink-soft)}
+.sc-steps li::before{content:counter(sc);align-self:flex-start;font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink-faint)}
+.sc-ic{font-size:34px;line-height:1}
+.chip.has{border-color:var(--accent-glow);color:var(--accent-ink)}
+.chip.on{background:var(--accent-fill);border-color:var(--accent);color:var(--accent-ink)}
+.draw-holder{margin-top:12px}
+.draw-note{font-size:12.5px;color:var(--ink-faint);margin-top:8px}
+.picker{padding:22px 22px 18px}
+.picker h2{font-size:17px;font-weight:600;margin:0 0 4px}
+.pk-sub{color:var(--ink-soft);font-size:13px;margin:0 0 14px}
+.pk-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.pk-opt{text-align:left;background:var(--surface-2);border:1px solid var(--line-soft);border-radius:var(--radius-sm);padding:12px 14px;display:flex;flex-direction:column;gap:3px}
+.pk-opt:hover{border-color:var(--accent)}
+.pk-opt b{font-size:14.5px;font-weight:600}
+.pk-opt span{font-size:12.5px;color:var(--ink-soft)}
+.pk-opt.on{border-color:var(--accent);background:var(--accent-fill)}.pk-opt.on b{color:var(--accent-ink)}
+.pk-done{width:100%;border:0;border-radius:var(--radius-sm);background:var(--accent);color:#fff;font-weight:600;font-size:14px;padding:11px}
+@media (max-width:520px){.pk-row{grid-template-columns:1fr}}
+/* learning path + quiz */
+.frame>.path-cta{order:-2}
+.path-cta{margin-top:16px;border:1px solid var(--accent-glow);background:var(--accent-fill);border-radius:var(--radius);padding:14px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px}
+.path-cta .pc-t{font-weight:600;font-size:15px}.path-cta .pc-s{font-size:12.5px;color:var(--ink-soft)}
+.path-cta .pc-main{flex:1;min-width:220px;display:flex;flex-direction:column;gap:6px}
+.pbar{height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden;min-width:120px}.pbar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.btn-main{border:0;border-radius:var(--radius-sm);background:var(--accent);color:#fff;font-weight:600;font-size:13.5px;padding:9px 16px}
+.btn-main:hover{filter:brightness(1.08)}.btn-main[disabled]{opacity:.6;cursor:default}
+.keycode-why{font-size:13.5px;color:var(--ink-soft);margin:0 0 4px}
+.sec-keycode .codebox{max-height:42vh} /* keep the quiz close below the code */
+.quiz-q{margin-top:12px;padding:14px 16px;border:1px solid var(--line-soft);border-radius:var(--radius);background:var(--surface-2)}
+.quiz-q .qt{font-weight:600;font-size:14.5px;margin-bottom:10px;line-height:1.4}
+.quiz-q .qsub{font-size:14px;color:var(--ink);margin:-4px 0 10px}
+.qopts{display:flex;flex-direction:column;gap:7px}
+.qopt{text-align:left;background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--radius-sm);padding:9px 12px;font-size:13.5px;line-height:1.4}
+.qopt:hover:not([disabled]){border-color:var(--accent)}.qopt[disabled]{cursor:default}
+.qopt.right{border-color:var(--k-fn);background:color-mix(in srgb,var(--k-fn) 13%,transparent)}
+.qopt.wrong{border-color:var(--k-concern);background:color-mix(in srgb,var(--k-concern) 13%,transparent)}
+.qres{margin-top:10px;font-size:13.5px;line-height:1.5;color:var(--ink-soft)}
+.qres .ok{color:var(--k-fn)}.qres .no{color:var(--k-concern)}.qres .mid{color:var(--accent-ink)}
+.qres .chip{margin-top:6px}
+.qmiss{margin:6px 0 0;padding-left:18px}.qmiss li::marker{color:var(--accent)}
+textarea.qexplain{width:100%;min-height:92px;resize:vertical;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink);font:inherit;font-size:14px;padding:10px 12px}
+textarea.qexplain:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+.qact{display:flex;gap:10px;align-items:center;margin-top:10px}.qact .hint{font-size:12px;color:var(--ink-faint)}
 @media (max-width:780px){.layout{grid-template-columns:1fr}.rail{position:static;max-height:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -169,6 +246,7 @@ button.ghlink{cursor:pointer}
     </div>
     <div class="top-actions">
       <span class="livepill" id="livepill" hidden>live</span>
+      <button class="themebtn" id="learnerbtn" title="How you learn — change any time"><span id="learnerlabel">Learner</span></button>
       <button class="themebtn" id="searchbtn" title="Search the map (⌘K or /)">Search <span class="kbd">⌘K</span></button>
       <button class="themebtn" id="themebtn"><span id="themelabel">Theme</span></button>
     </div>
@@ -182,6 +260,23 @@ button.ghlink{cursor:pointer}
     </main>
   </div>
 </div>
+<div class="pal" id="picker" hidden role="dialog" aria-label="How do you learn best?">
+  <div class="pal-box picker">
+    <h2>How do you learn best?</h2>
+    <p class="pk-sub">The map changes to fit you. Change it any time from the header.</p>
+    <div class="pk-row" data-k="style">
+      <button class="pk-opt" data-v="visual"><b>Visual</b><span>Diagrams first. Ask for more graphs.</span></button>
+      <button class="pk-opt" data-v="text"><b>Text</b><span>Words first. Diagrams when you want them.</span></button>
+    </div>
+    <h2>Your level</h2>
+    <p class="pk-sub">Beginners get a simple card on every page.</p>
+    <div class="pk-row" data-k="level">
+      <button class="pk-opt" data-v="beginner"><b>Beginner</b><span>Everyday comparisons, simple words.</span></button>
+      <button class="pk-opt" data-v="developer"><b>Developer</b><span>Straight to the technical detail.</span></button>
+    </div>
+    <button class="pk-done" id="pk-done">Start learning</button>
+  </div>
+</div>
 <div class="pal" id="pal" hidden role="dialog" aria-label="Search the map">
   <div class="pal-box"><input class="pal-in" id="pal-in" placeholder="Search files, functions, tools, stages…" autocomplete="off" spellcheck="false"><div class="pal-list" id="pal-list"></div></div>
 </div>
@@ -191,6 +286,17 @@ button.ghlink{cursor:pointer}
 "use strict";
 const DATA=JSON.parse(document.getElementById("cs").textContent);
 const LIVE=__CS_LIVE__; // true when served by `codesight serve` (agent-driven dashboard + code view)
+// ---- learner: how this viewer likes to learn (saved per browser) ----
+const LEARNER_KEY="codesight.learner",STYLES=["visual","text"],LEVELS=["beginner","developer"];
+function loadPrefs(){ try{ const p=JSON.parse(localStorage.getItem(LEARNER_KEY)||"null");
+  if(p&&STYLES.includes(p.style)&&LEVELS.includes(p.level))return p; }catch{} return null; }
+const savedPrefs=loadPrefs();
+let prefs=savedPrefs||{style:"visual",level:"developer"},prefsChosen=Boolean(savedPrefs);
+document.documentElement.dataset.style=prefs.style;document.documentElement.dataset.level=prefs.level;
+// ---- learning path progress (per browser, per repo) ----
+const PATH=DATA.hasArch?DATA.spine:[],PATH_KEY="codesight.path."+DATA.project.name,MIN_PER_STEP=3;
+function loadPath(){ try{ const p=JSON.parse(localStorage.getItem(PATH_KEY)||"null"); if(p&&p.steps&&typeof p.steps==="object")return p; }catch{} return {steps:{},at:0}; }
+let progress=loadPath();
 const GIT=DATA.git||{};
 const byPath=new Map(DATA.files.map(f=>[f.path,f]));
 const byId=(arr)=>new Map((arr||[]).map(x=>[x.id,x]));
@@ -228,6 +334,8 @@ function section(sec,items,track){
   s.appendChild(wrap);rail.appendChild(s);
 }
 section("Start",[{title:"Repository overview",sub:"the whole repo",target:{t:"overview"},kind:"ov"}]);
+let pathSubEl=null; // "3 of 10 steps done" under the rail entry
+if(PATH.length){ section("Learn",[{title:"Learning path",sub:" ",target:{t:"path",id:"0"},kind:"step"}]);pathSubEl=rail.lastChild.querySelector(".st-sub"); }
 if(DATA.hasArch){
   section("Request flow",DATA.spine.map(s=>({title:s.title,num:s.n,target:{t:"stage",id:s.id},kind:"stage"})),true);
   if(DATA.tools.length) section("Tools",DATA.tools.map(t=>({title:t.name,sub:t.summary,target:{t:"tool",id:t.id},kind:"tool"})));
@@ -247,7 +355,7 @@ window.addEventListener("resize",paintTrace);
 // ---- panel ----
 let stack=[],curDiags=[],hl=new Set(); // hl: files the agent's current answer is about
 const crumbsEl=document.getElementById("crumbs"),pbody=document.getElementById("pbody"),panel=document.getElementById("panel");
-function open(t,label){ markActive(keyOf(t));
+function open(t,label){ markActive(keyOf(t.t==="path"?{t:"path",id:"0"}:t));
   const map={overview:"Overview",stage:"stage",domain:"domain",tool:"tool",concern:"concern",store:"store",infra:"infra",area:"area",file:"file"};
   stack=[{kind:t.t,ref:t.id,label:label||map[t.t]}]; render(true); }
 function pushFrame(f){stack.push(f);render(false);}
@@ -259,7 +367,7 @@ function render(scroll){
     if(i<stack.length-1)c.addEventListener("click",()=>gotoCrumb(i));crumbsEl.appendChild(c); });
   const frame=stack[stack.length-1];
   pbody.innerHTML="";curDiags=[];
-  pbody.appendChild(renderFrame(frame));
+  const node=renderFrame(frame);node.classList.add("frame");pbody.appendChild(node);
   if(scroll)panel.scrollIntoView({block:"nearest",behavior:"smooth"});
 }
 function head(kind,kl,title,mono,path,summary,gh){ const h=document.createElement("div");h.className="detail-head";
@@ -295,6 +403,7 @@ function renderFrame(f){
   if(f.kind==="function")return renderFunc(f.file,f.fn);
   if(f.kind==="code")return renderCode(f);
   if(f.kind==="diagram")return renderUserDiagram(userDiagrams[+f.ref]);
+  if(f.kind==="path")return renderPath(+f.ref);
   return document.createElement("div");
 }
 function renderOverview(){
@@ -302,6 +411,7 @@ function renderOverview(){
   const h=document.createElement("div");h.className="detail-head";
   h.innerHTML=kindTag("ov","Repository")+'<div class="detail-title">'+esc(o.name)+'</div>'+(o.description?'<div class="summary">'+esc(o.description)+'</div>':"")+ghLink("",null);
   const bd=document.createElement("div");bd.className="badges";o.badges.forEach(b=>bd.appendChild(el('<span class="badge">'+esc(b)+'</span>')));h.appendChild(bd);w.appendChild(h);
+  if(PATH.length)w.appendChild(pathCta());
   const mb=metaBlock([["Non-negotiables",o.invariants]]);if(mb)w.appendChild(mb);
   const k=document.createElement("div");k.className="kpis";
   o.stats.forEach(s=>k.appendChild(el('<div class="kpi"><span class="val">'+esc(s.value)+'</span><span class="lab">'+esc(s.label)+'</span></div>')));w.appendChild(k);
@@ -316,8 +426,7 @@ function renderOverview(){
   if(ranked.length){ const sec=sectionEl("Read these first",ranked.length);
     ranked.forEach(([p,n])=>{const f=byPath.get(p);if(f)sec._list.appendChild(fileRow(f,n+(n===1?" file imports this":" files import this")+(f.summary?" · "+f.summary:"")));});w.appendChild(sec); }
   // Request flow — the high-level graph, inline (re-renders on theme toggle).
-  if(DATA.diagram){ const sec=sectionEl("Request flow");const holder=el('<div class="mermaid-holder"></div>');
-    sec.replaceChild(holder,sec._list);w.appendChild(sec);addDiagram(DATA.diagram,holder); }
+  if(DATA.diagram)w.appendChild(diagramSection("Request flow",DATA.diagram));
   if(DATA.tools.length){ const sec=sectionEl("Tools",DATA.tools.length);
     DATA.tools.forEach(t=>sec._list.appendChild(item({kind:"tool",name:t.name,sub:t.summary,sans:true,ln:(t.files||[]).length?(t.files.length+" files"):"",onClick:()=>open({t:"tool",id:t.id},t.name)})));w.appendChild(sec); }
   if(DATA.domains.length){ const sec=sectionEl("Domains",DATA.domains.length);
@@ -327,10 +436,13 @@ function renderOverview(){
   return w;
 }
 function renderStage(s){ const w=document.createElement("div");
-  w.appendChild(head("stage","Stage "+s.n,s.title,false,"",s.blurb));
-  if(s.diagram){ const sec=sectionEl("Stage flow");const holder=el('<div class="mermaid-holder"></div>');
-    sec.replaceChild(holder,sec._list);w.appendChild(sec);addDiagram(s.diagram,holder); }
+  const hs=head("stage","Stage "+s.n,s.title,false,"",s.blurb);w.appendChild(hs);
+  const pi=PATH.findIndex(x=>x.id===s.id);
+  if(pi>=0&&quizOf(s)){ const b=el('<button class="ghlink">Quiz yourself on this stage</button>');b.addEventListener("click",()=>goStep(pi+1));hs.appendChild(b); }
+  addLearning(w,"stage",s.id);
+  if(s.diagram)w.appendChild(diagramSection("Stage flow",s.diagram));
   if(s.files&&s.files.length)w.appendChild(filesSection(s.files));
+  addDraw(w,"stage",s.id);
   // Walk the request flow: previous / next stage, in-panel.
   const idx=DATA.spine.findIndex(x=>x.id===s.id);
   const prev=idx>0?DATA.spine[idx-1]:null, next=idx>=0&&idx<DATA.spine.length-1?DATA.spine[idx+1]:null;
@@ -344,17 +456,18 @@ function renderStage(s){ const w=document.createElement("div");
   return w; }
 function renderDomain(d){ const w=document.createElement("div");
   w.appendChild(head("domain","Domain",d.name,false,"",d.summary));
-  const mb=metaBlock([["Key entities",d.entities],["Business rules",d.rules]]);if(mb)w.appendChild(mb);
+  addLearning(w,"domain",d.id);
+  more(w,[metaBlock([["Key entities",d.entities],["Business rules",d.rules]])]);
   if(d.flows&&d.flows.length){ const s=sectionEl("Business flows",d.flows.length);
     d.flows.forEach((fl,i)=>s._list.appendChild(item({kind:"flow",name:fl.name,sub:(fl.steps||[]).length+" steps",sans:true,onClick:()=>pushFrame({kind:"flow",domainId:d.id,idx:i,label:fl.name})})));w.appendChild(s); }
   if(d.files&&d.files.length)w.appendChild(filesSection(d.files));
+  addDraw(w,"domain",d.id);
   return w; }
 function renderFlow(domainId,idx){ const d=domainById.get(domainId);const fl=d.flows[idx];const w=document.createElement("div");
   w.appendChild(head("flow","Business flow",fl.name,false,"",undefined));
   const steps=fl.steps||[];
   const g=flowDiagram(steps);
-  if(g){ const sec=sectionEl("Flow");const holder=el('<div class="mermaid-holder"></div>');
-    sec.replaceChild(holder,sec._list);w.appendChild(sec);addDiagram(g,holder); }
+  if(g)w.appendChild(diagramSection("Flow",g));
   if(steps.length){ const s=sectionEl("Steps",steps.length);
     steps.forEach((st,i)=>{ const f=st.file&&byPath.get(st.file);
       s._list.appendChild(item({kind:"step",name:(i+1)+". "+st.name,path:f?st.file:null,sub:f?f.summary:"",sans:true,ln:st.file?base(st.file):"",leaf:!f,onClick:f?()=>pushFrame({kind:"file",ref:st.file,label:base(st.file)}):null})); });
@@ -362,16 +475,18 @@ function renderFlow(domainId,idx){ const d=domainById.get(domainId);const fl=d.f
   return w; }
 function renderTool(t){ const w=document.createElement("div");
   w.appendChild(head("tool","Tool",t.name,true,"",t.summary));
-  if(t.howItWorks){ const n=document.createElement("div");n.className="notes";n.appendChild(el('<div>'+esc(t.howItWorks)+'</div>'));w.appendChild(n); }
-  if(t.diagram){ const sec=sectionEl("How it works");const holder=el('<div class="mermaid-holder"></div>');
-    sec.replaceChild(holder,sec._list);w.appendChild(sec);addDiagram(t.diagram,holder); }
-  const mb=metaBlock([["Inputs",t.inputs],["Rules",t.rules]]);if(mb)w.appendChild(mb);
+  addLearning(w,"tool",t.id);
+  const how=t.howItWorks?el('<div class="notes"><div>'+esc(t.howItWorks)+'</div></div>'):null;
+  if(t.diagram)w.appendChild(diagramSection("How it works",t.diagram));
+  more(w,[how,metaBlock([["Inputs",t.inputs],["Rules",t.rules]])]);
   if(t.files&&t.files.length)w.appendChild(filesSection(t.files));
+  addDraw(w,"tool",t.id);
   return w; }
 function renderConcern(c){ const w=document.createElement("div");
   w.appendChild(head("concern","Concern",c.label,false,"",c.detail));
-  if(c.diagram){ const sec=sectionEl("How it works");const holder=el('<div class="mermaid-holder"></div>');
-    sec.replaceChild(holder,sec._list);w.appendChild(sec);addDiagram(c.diagram,holder); }
+  addLearning(w,"concern",c.id);
+  if(c.diagram)w.appendChild(diagramSection("How it works",c.diagram));
+  addDraw(w,"concern",c.id);
   return w; }
 function renderStore(s){ const w=document.createElement("div");
   w.appendChild(head("store","Data store",s.label,false,esc(s.kind),s.detail));return w; }
@@ -385,7 +500,7 @@ function renderArea(dir){ const w=document.createElement("div");const files=(fil
   w.appendChild(sec);return w; }
 function renderFile(f){ const w=document.createElement("div");
   const h=head("file","File",base(f.path),true,esc(f.path),f.summary);
-  actions(h,ghLink(f.path,null),codeBtn(f.path,1,Math.min(f.lines||MAX_CODE_LINES,MAX_CODE_LINES)));w.appendChild(h);
+  actions(h,ghLink(f.path,null),codeBtn(f.path,null));w.appendChild(h);
   if(f.notes&&f.notes.length){ const n=document.createElement("div");n.className="notes";f.notes.forEach(x=>n.appendChild(el('<div>'+esc(x)+'</div>')));w.appendChild(n); }
   const defs=[...f.functions.map(x=>({...x,type:"function"})),...f.classes.map(x=>({...x,type:"class"}))].sort((a,b)=>a.start-b.start);
   if(defs.length){ const sec=sectionEl("Functions & classes",defs.length);
@@ -398,7 +513,7 @@ function renderFile(f){ const w=document.createElement("div");
 function renderFunc(filePath,fnName){ const f=byPath.get(filePath);const fn=[...f.functions,...f.classes].find(x=>x.name===fnName)||{name:fnName,start:0,end:0};
   const w=document.createElement("div");const isClass=f.classes.some(x=>x.name===fnName);
   const h=head(isClass?"class":"function",isClass?"Class":"Function",fnName,true,esc(filePath)+' <span class="ln">L'+fn.start+"-"+fn.end+"</span>",undefined);
-  actions(h,ghLink(filePath,[fn.start,fn.end]),fn.start?codeBtn(filePath,fn.start,fn.end):null);w.appendChild(h);
+  actions(h,ghLink(filePath,[fn.start,fn.end]),fn.start?codeBtn(filePath,[[fn.start,fn.end]]):null);w.appendChild(h);
   const outs=[...new Set(f.calls.filter(c=>c.caller===fnName).map(c=>c.callee))];
   const ins=[...new Set(f.calls.filter(c=>c.callee===fnName).map(c=>c.caller))];
   const sib=new Set(f.functions.map(x=>x.name));
@@ -410,61 +525,164 @@ function renderFunc(filePath,fnName){ const f=byPath.get(filePath);const fn=[...
   return w; }
 
 // ---- code view + agent-drawn diagrams (live mode) ----
-const MAX_CODE_LINES=400, CODE_PAD=6;
+const MAX_CODE_LINES=400, CODE_CTX=40; // lines per fetch (the server's cap) / context around a range
 const rangeLabel=(a,b)=>"L"+a+(b>a?"-"+b:"");
+const rangesLabel=rs=>rs.map(r=>rangeLabel(r[0],r[1])).join(", ");
+let citedLines=new Map(); // path → [[start,end],…] the agent cited (highlight tool)
 function actions(h,gh,btn){ const a=document.createElement("div");a.className="actions";
   if(gh)a.appendChild(el(gh)); if(btn&&LIVE)a.appendChild(btn);
   if(a.children.length)h.insertBefore(a,h.querySelector(".summary")); }
-function codeBtn(path,start,end){ const b=el('<button class="ghlink">Show code</button>');
-  b.addEventListener("click",()=>pushFrame({kind:"code",file:path,start,end,label:rangeLabel(start,end)})); return b; }
+// ranges null → the whole file, marking any lines the agent cited in it.
+function codeBtn(path,ranges){ const b=el('<button class="ghlink">Show code</button>');
+  b.addEventListener("click",()=>pushFrame(codeFrame(path,ranges||citedLines.get(path)||[],"",!ranges))); return b; }
+function codeFrame(path,ranges,note,whole){ return {kind:"code",file:path,ranges,note,whole,label:ranges.length?rangesLabel(ranges.slice(0,2)):"Code"}; }
+// What to fetch first: the top of the file, or a window around each group of
+// highlighted ranges. Ranges too far apart for one window become separate blocks.
+function codeWindows(fr){ const rs=fr.ranges.slice().sort((a,b)=>a[0]-b[0]);
+  if(!rs.length||(fr.whole&&rs[rs.length-1][1]<=MAX_CODE_LINES))return [[1,MAX_CODE_LINES]];
+  const wins=[];
+  for(const [a,b] of rs){ const lo=Math.max(1,a-CODE_CTX),hi=b+CODE_CTX,last=wins[wins.length-1];
+    if(last&&lo<=last[1]+1&&hi-last[0]<MAX_CODE_LINES)last[1]=Math.max(last[1],hi); else wins.push([lo,Math.min(hi,lo+MAX_CODE_LINES-1)]); }
+  return wins; }
+// highlight.js (~120 KB) loads in the background; code shows plain until it is ready.
+const HLJS_SRC="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js";
+const HL_LANG={typescript:"typescript",javascript:"javascript",python:"python",sql:"sql",yaml:"yaml",json:"json",go:"go",rust:"rust",java:"java",kotlin:"kotlin",csharp:"csharp",cpp:"cpp",c:"c",php:"php",ruby:"ruby",swift:"swift",markdown:"markdown",html:"xml",xml:"xml",css:"css",scss:"scss",shell:"bash",bash:"bash",toml:"ini",properties:"ini",graphql:"graphql",lua:"lua",r:"r"};
+const loadHljs=()=>loadScript(HLJS_SRC,()=>window.hljs);
+// Highlight the window as one block (so multi-line comments and strings colour
+// right), then split it back into lines, closing and re-opening spans at each break.
+function hlHtml(lines,lang){ if(!lang||!window.hljs||!hljs.getLanguage(lang))return null;
+  let html; try{ html=hljs.highlight(lines.join("\n"),{language:lang,ignoreIllegals:true}).value; }catch{ return null; }
+  const out=[],open=[];let cur="",m;const re=/(<span[^>]*>)|(<\/span>)|(\n)|([^<\n]+)/g;
+  while((m=re.exec(html))){ if(m[1]){open.push(m[1]);cur+=m[1];} else if(m[2]){open.pop();cur+=m[2];}
+    else if(m[3]){ out.push(cur+"</span>".repeat(open.length));cur=open.join(""); } else cur+=m[4]; }
+  out.push(cur+"</span>".repeat(open.length));
+  return out.length===lines.length?out:null; }
 function renderCode(fr){ const w=document.createElement("div");
-  w.appendChild(head("file","Code",base(fr.file),true,esc(fr.file)+' <span class="ln">'+rangeLabel(fr.start,fr.end)+'</span>',undefined,ghLink(fr.file,[fr.start,fr.end])));
+  const rs=fr.ranges||(fr.start?[[fr.start,fr.end||fr.start]]:[]);fr.ranges=rs;
+  w.appendChild(head("file","Code",base(fr.file),true,esc(fr.file)+(rs.length?' <span class="ln">'+esc(rangesLabel(rs))+'</span>':""),undefined,ghLink(fr.file,rs[0]||null)));
   if(fr.note){ const n=document.createElement("div");n.className="notes";n.appendChild(el('<div>'+esc(fr.note)+'</div>'));w.appendChild(n); }
-  const box=el('<div class="codebox"><div class="diag-loading">loading…</div></div>');w.appendChild(box);
-  if(!LIVE){ box.innerHTML='<div class="diag-err">Code view needs <span class="mono">codesight serve</span>. Use the GitHub link above.</div>';return w; }
-  const from=Math.max(1,fr.start-CODE_PAD);
-  fetch("/api/code?path="+encodeURIComponent(fr.file)+"&start="+from+"&end="+(fr.end+CODE_PAD))
-    .then(r=>r.ok?r.json():Promise.reject(r.status))
-    .then(c=>{ box.innerHTML="";let first=null;
-      c.lines.forEach((ln,i)=>{ const n=c.start+i,on=n>=fr.start&&n<=fr.end;
-        const row=document.createElement("div");row.className="cl"+(on?" on":"");
-        const num=document.createElement("span");num.className="cn";num.textContent=n;
-        const txt=document.createElement("span");txt.textContent=ln||" "; // textContent: code is never parsed as HTML
-        row.append(num,txt);box.appendChild(row);if(on&&!first)first=row; });
-      if(first)box.scrollTop=Math.max(0,first.offsetTop-40); })
-    .catch(()=>{ box.innerHTML='<div class="diag-err">Could not load this file.</div>'; });
+  w.append(...codeView(fr));
   return w; }
+// The code box itself (+ its "show more" buttons), loading as it goes. Used by
+// the code page and by each learning-path step's "Key code".
+function codeView(fr){ const f=byPath.get(fr.file);const rs=fr.ranges;
+  const up=el('<button class="ghlink code-more" hidden></button>'),box=el('<div class="codebox"><div class="diag-loading">loading…</div></div>'),down=el('<button class="ghlink code-more" hidden></button>');
+  if(!LIVE){ box.innerHTML='<div class="diag-err">Code view needs <span class="mono">codesight serve</span>. Use the GitHub link above.</div>';return [box]; }
+  const lang=HL_LANG[(f&&f.language)||""];
+  const defs=new Map(); // line → "function x" / "class Y", for the gutter markers
+  if(f)[...f.functions.map(d=>["function",d]),...f.classes.map(d=>["class",d])].forEach(([k,d])=>defs.set(d.start,{cls:k==="class",label:(defs.has(d.start)?defs.get(d.start).label+", ":"")+k+" "+d.name}));
+  const isOn=n=>rs.some(r=>n>=r[0]&&n<=r[1]);
+  // The loaded code as sorted, non-touching segments; the gaps between them fold.
+  let segs=[],total=0;
+  const addSeg=c=>{ segs.push({from:c.start,lines:c.lines});total=c.total;segs.sort((x,y)=>x.from-y.from);
+    const merged=[];for(const g of segs){ const p=merged[merged.length-1];
+      if(p&&g.from<=p.from+p.lines.length){ const skip=p.from+p.lines.length-g.from;p.lines=p.lines.concat(g.lines.slice(skip)); } else merged.push({...g}); }
+    segs=merged; };
+  const endOf=g=>g.from+g.lines.length-1;
+  const row=(n,ln,html)=>{ const d=defs.get(n),r=document.createElement("div");
+    r.className="cl"+(isOn(n)?" on":"")+(d?" def"+(d.cls?" cls":""):"");if(d)r.title=d.label;
+    const num=document.createElement("span");num.className="cn";num.textContent=n;
+    const txt=document.createElement("span");txt.className="cc";
+    if(html)txt.innerHTML=html||" "; else txt.textContent=ln||" "; // highlight.js output is escaped; plain text never parsed
+    r.append(num,txt);return r; };
+  const get=(a,b)=>fetch("/api/code?path="+encodeURIComponent(fr.file)+"&start="+a+"&end="+b).then(r=>r.ok?r.json():Promise.reject(r.status));
+  const load=(a,b,keep)=>get(a,b).then(c=>{ const h0=box.scrollHeight,t0=box.scrollTop;addSeg(c);paint();
+    if(keep==="bottom")box.scrollTop=t0+(box.scrollHeight-h0); else if(keep)box.scrollTop=t0; });
+  const paint=()=>{ const frag=document.createDocumentFragment();
+    segs.forEach((g,i)=>{ if(i){ const a=endOf(segs[i-1])+1,b=g.from-1;
+        const gap=el('<button class="gap">⋯ '+(b-a+1)+' lines hidden — show</button>');
+        gap.addEventListener("click",()=>load(a,Math.min(b,a+MAX_CODE_LINES-1),true));frag.appendChild(gap); }
+      const html=hlHtml(g.lines,lang);g.lines.forEach((ln,j)=>frag.appendChild(row(g.from+j,ln,html&&html[j]))); });
+    box.replaceChildren(frag);
+    const first=segs[0],last=segs[segs.length-1];
+    up.hidden=!first||first.from<=1;if(first)up.textContent="Show "+Math.min(MAX_CODE_LINES,first.from-1)+" earlier lines";
+    down.hidden=!last||endOf(last)>=total;if(last)down.textContent="Show next "+Math.min(MAX_CODE_LINES,total-endOf(last))+" lines"; };
+  Promise.all(codeWindows(fr).map(([a,b])=>get(a,b))).then(cs=>{ cs.forEach(addSeg);paint();
+      const on=box.querySelector(".cl.on");if(on)box.scrollTop=Math.max(0,on.offsetTop-48);
+      if(lang&&!window.hljs)loadHljs().then(()=>{ const t=box.scrollTop;paint();box.scrollTop=t; }).catch(()=>{}); })
+    .catch(()=>{ box.innerHTML='<div class="diag-err">Could not load this file.</div>'; });
+  up.addEventListener("click",()=>{ const b=segs[0].from-1;load(Math.max(1,b-MAX_CODE_LINES+1),b,"bottom"); });
+  down.addEventListener("click",()=>{ const a=endOf(segs[segs.length-1])+1;load(a,a+MAX_CODE_LINES-1,true); });
+  return [up,box,down]; }
+// Diagrams and simple cards the agent pushed this session ("From your questions").
 const userDiagrams=[];let diagSec=null;
 const DIAG_LABEL={architecture:"Architecture",workflow:"User journey",sequence:"Sequence",dataflow:"Data flow",lifecycle:"Lifecycle"};
 function addUserDiagram(d){ d.id=String(userDiagrams.length);userDiagrams.push(d);
-  if(!diagSec){ diagSec=document.createElement("div");diagSec.className="railsec";diagSec.appendChild(el('<p class="sec-h">Your diagrams</p>'));rail.insertBefore(diagSec,rail.children[1]||null); }
+  if(!diagSec){ diagSec=document.createElement("div");diagSec.className="railsec";diagSec.appendChild(el('<p class="sec-h">From your questions</p>'));rail.insertBefore(diagSec,rail.children[1]||null); }
   const t={t:"diagram",id:d.id},b=document.createElement("button");b.className="station";
-  b.innerHTML='<span class="dot"><i style="background:var(--k-flow)"></i></span><span class="st-body"><span class="st-title">'+esc(d.title)+'</span><span class="st-sub">'+esc(DIAG_LABEL[d.kind]||d.kind)+'</span></span>';
+  const sub=d.card?"Simple card":(DIAG_LABEL[d.kind]||d.kind);
+  b.innerHTML='<span class="dot"><i style="background:var(--k-'+(d.card?"step":"flow")+')"></i></span><span class="st-body"><span class="st-title">'+esc(d.title)+'</span><span class="st-sub">'+esc(sub)+'</span></span>';
   b.addEventListener("click",()=>{clearAsk();open(t,d.title);});
   clickables.push({key:keyOf(t),set:on=>b.classList.toggle("active",on)});
   diagSec.appendChild(b);open(t,d.title); }
 function renderUserDiagram(d){ const w=document.createElement("div");if(!d)return w;
+  if(d.card){ w.appendChild(head("step","Simple card",d.title,false,"",undefined));w.appendChild(cardEl(d.card,true));return w; }
   w.appendChild(head("diagram",DIAG_LABEL[d.kind]||"Diagram",d.title,false,"",undefined));
   const holder=el('<div class="mermaid-holder" style="margin-top:14px"></div>');w.appendChild(holder);addDiagram(d.mermaid,holder);
   return w; }
+
+// ---- learning blocks: beginner card, diagram folding, "Read more", "Draw this" ----
+function cardEl(card,open){ const d=document.createElement("details");d.className="simple-card";d.open=open;
+  d.innerHTML='<summary>'+(open?"In simple words":"Explain simply")+'</summary><div class="sc-analogy">'+esc(card.analogy)+'</div><ol class="sc-steps">'+
+    card.steps.map(st=>'<li><span class="sc-ic" aria-hidden="true">'+esc(st.icon)+'</span><span>'+esc(st.text)+'</span></li>').join("")+'</ol>';
+  return d; }
+// A diagram section. Text learners get a button instead, so nothing renders until asked.
+function diagramSection(title,def){ const sec=sectionEl(title);sec.classList.add("sec-diagram");
+  const holder=el('<div class="mermaid-holder"></div>');sec.replaceChild(holder,sec._list);
+  if(prefs.style==="text"){ holder.classList.add("diag-fold");const b=el('<button class="ghlink">Show diagram</button>');
+    b.addEventListener("click",()=>{holder.classList.remove("diag-fold");addDiagram(def,holder);});holder.appendChild(b); }
+  else addDiagram(def,holder);
+  return sec; }
+// Visual learners: longer text folds under "Read more" so the pictures lead.
+function more(w,nodes){ nodes=nodes.filter(Boolean); if(!nodes.length)return;
+  if(prefs.style!=="visual"){ nodes.forEach(n=>w.appendChild(n));return; }
+  const d=document.createElement("details");d.className="more";d.innerHTML="<summary>Read more</summary>";nodes.forEach(n=>d.appendChild(n));w.appendChild(d); }
+function addLearning(w,kind,id){ const card=(DATA.simple||{})[kind+":"+id];
+  if(card)w.appendChild(cardEl(card,prefs.level==="beginner")); }
+function addDraw(w,kind,id){ const ds=drawSection({t:kind,id}); if(ds)w.appendChild(ds); }
+// "Draw this": cached drawings show everywhere; new ones need `codesight serve`.
+const DRAW_KINDS=["architecture","workflow","sequence","dataflow","lifecycle"];
+const drawn=new Map(Object.entries(DATA.drawn||{}));
+function drawSection(t){ const key=k=>t.t+":"+t.id+":"+k;
+  const kinds=DRAW_KINDS.filter(k=>LIVE||drawn.has(key(k))); if(!kinds.length)return null;
+  const sec=sectionEl(LIVE?"Draw this":"Drawn diagrams");sec.classList.add("sec-diagram");
+  const row=document.createElement("div");row.className="chips";sec.replaceChild(row,sec._list);
+  const holder=el('<div class="mermaid-holder draw-holder" hidden></div>');sec.appendChild(holder);
+  const note=el('<div class="draw-note" hidden></div>');sec.appendChild(note);
+  const chips={};
+  const show=async(k,force)=>{ Object.values(chips).forEach(c=>c.classList.remove("on"));chips[k].classList.add("on");
+    holder.hidden=false;note.hidden=true;
+    if(!drawn.has(key(k))||force){
+      holder.innerHTML='<div class="diag-loading">Drawing the '+esc(DIAG_LABEL[k].toLowerCase())+' diagram… the first time takes about 20 seconds.</div>';
+      try{ const r=await fetch("/api/draw",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({target:t,kind:k,force:!!force})});
+        const j=await r.json(); if(!r.ok)throw new Error(j.error||"draw failed");
+        drawn.set(key(k),j);chips[k].classList.add("has"); }
+      catch(e){ holder.innerHTML='<div class="diag-err">Could not draw it: '+esc(e.message)+'</div>';return; } }
+    const ok=await addDiagram(drawn.get(key(k)).mermaid,holder);
+    if(!ok&&LIVE){ note.hidden=false;note.innerHTML="";const b=el('<button class="chip">Redraw</button>');b.addEventListener("click",()=>show(k,true));note.appendChild(b); } };
+  kinds.forEach(k=>{ const b=el('<button class="chip'+(drawn.has(key(k))?" has":"")+'">'+esc(DIAG_LABEL[k])+'</button>');
+    b.title=drawn.has(key(k))?"Drawn — opens instantly":"Ask Claude to draw it";b.addEventListener("click",()=>show(k,false));chips[k]=b;row.appendChild(b); });
+  return sec; }
 
 // ---- diagrams ----
 const mlabel=s=>'"'+String(s).replace(/"/g,"'").slice(0,42)+'"';
 function flowDiagram(steps){ const s=(steps||[]).filter(x=>x&&x.name); if(s.length<2)return null;
   const L=["flowchart TD"]; s.forEach((st,i)=>{ L.push("  n"+i+"["+mlabel(st.name)+"]"); if(i)L.push("  n"+(i-1)+" --> n"+i); }); return L.join("\n"); }
-function addDiagram(def,holder){ curDiags.push({def,holder}); renderMermaid(def,holder); }
+function addDiagram(def,holder){ curDiags=curDiags.filter(d=>d.holder!==holder);curDiags.push({def,holder}); return renderMermaid(def,holder); }
 // mermaid (~1 MB) loads in the background on the first diagram, so it never
 // blocks the page from opening.
 const MERMAID_SRC="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js";
-let mermaidReady=null;
-function loadMermaid(){ if(window.mermaid)return Promise.resolve();
-  if(!mermaidReady)mermaidReady=new Promise((ok,fail)=>{ const sc=document.createElement("script");sc.src=MERMAID_SRC;sc.onload=ok;sc.onerror=()=>{mermaidReady=null;fail();};document.head.appendChild(sc); });
-  return mermaidReady; }
+const scriptLoads=new Map();
+function loadScript(src,ready){ if(ready())return Promise.resolve();
+  if(!scriptLoads.has(src))scriptLoads.set(src,new Promise((ok,fail)=>{ const sc=document.createElement("script");sc.src=src;sc.onload=ok;
+    sc.onerror=()=>{ scriptLoads.delete(src);fail(); };document.head.appendChild(sc); }));
+  return scriptLoads.get(src); }
+const loadMermaid=()=>loadScript(MERMAID_SRC,()=>window.mermaid);
 async function renderMermaid(def,holder){ holder.innerHTML='<div class="diag-loading">rendering…</div>';
-  try{ await loadMermaid(); }catch{ holder.innerHTML='<div class="diag-err">Diagram engine unavailable offline.</div>';return; }
+  try{ await loadMermaid(); }catch{ holder.innerHTML='<div class="diag-err">Diagram engine unavailable offline.</div>';return false; }
   try{ mermaid.initialize({startOnLoad:false,securityLevel:"strict",theme:curTheme()==="dark"?"dark":"neutral",fontFamily:"IBM Plex Sans, sans-serif"});
-    const {svg}=await mermaid.render("m"+Math.random().toString(36).slice(2),def);holder.innerHTML=svg; }
-  catch(e){holder.innerHTML='<div class="diag-err">Could not render this diagram.</div>';}
+    const {svg}=await mermaid.render("m"+Math.random().toString(36).slice(2),def);holder.innerHTML=svg;return true; }
+  catch(e){holder.innerHTML='<div class="diag-err">Could not render this diagram.</div>';return false;}
 }
 // theme
 const themebtn=document.getElementById("themebtn"),themelabel=document.getElementById("themelabel");
@@ -474,16 +692,124 @@ const setLabel=()=>themelabel.textContent=curTheme()==="dark"?"Light":"Dark";
 themebtn.onclick=()=>{document.documentElement.setAttribute("data-theme",curTheme()==="dark"?"light":"dark");setLabel();curDiags.forEach(d=>renderMermaid(d.def,d.holder));paintTrace();};
 matchMedia("(prefers-color-scheme:dark)").addEventListener("change",setLabel);setLabel();
 
+// ---- learning path: the request-flow stages in order, each with a quiz ----
+const quizOf=s=>(DATA.quiz||{})["stage:"+s.id]||null;
+function stepState(id){ return progress.steps[id]||(progress.steps[id]={seen:false,picks:[],open:null}); }
+function stepDone(s){ const st=progress.steps[s.id],q=quizOf(s); if(!st||!st.seen)return false;
+  return !q||q.questions.every((_,i)=>st.picks[i]!=null); }
+function stepScore(s){ const st=progress.steps[s.id]||{picks:[]},q=quizOf(s); if(!q)return null;
+  return {right:q.questions.filter((x,i)=>st.picks[i]===x.answer).length,of:q.questions.length,open:st.open&&st.open.score!=null?st.open:null}; }
+function savePath(){ try{localStorage.setItem(PATH_KEY,JSON.stringify(progress));}catch{} paintPathRail(); }
+const pathDone=()=>PATH.filter(stepDone).length;
+function paintPathRail(){ if(pathSubEl)pathSubEl.textContent=pathDone()+" of "+PATH.length+" steps done"; }
+function pathBar(){ const b=el('<div class="pbar"><i></i></div>');b.firstChild.style.width=Math.round(100*pathDone()/Math.max(1,PATH.length))+"%";return b; }
+const goStep=i=>open({t:"path",id:String(i)},"Learning path");
+function nextStep(){ const i=PATH.findIndex(s=>!stepDone(s)); return i<0?PATH.length+1:i+1; }
+function pathCta(){ const done=pathDone(),all=done>=PATH.length,c=document.createElement("div");c.className="path-cta";
+  const main=el('<div class="pc-main"><div class="pc-t">'+(all?"You finished the learning path":done?"Continue the learning path":"Learn this repo in about "+PATH.length*MIN_PER_STEP+" minutes")+'</div><div class="pc-s">'+PATH.length+' steps through the request flow — a simple card, the diagram, the key code, and a short quiz each.</div></div>');
+  main.appendChild(pathBar());c.appendChild(main);
+  const b=el('<button class="btn-main">'+(all?"See your score":done?"Continue — step "+nextStep():"Start")+'</button>');
+  b.addEventListener("click",()=>goStep(done?nextStep():1));c.appendChild(b);return c; }
+function renderPath(i){ if(i<=0)return renderPathIntro(); if(i>PATH.length)return renderPathFinish(); return renderPathStep(i); }
+function renderPathIntro(){ const w=document.createElement("div");
+  const h=head("step","Learning path","Learn "+DATA.project.name,false,"","Walk the request flow from start to end. Each step has a simple card, the diagram, the key code, and a few questions. About "+PATH.length*MIN_PER_STEP+" minutes.");
+  h.appendChild(pathBar());w.appendChild(h);
+  const sec=sectionEl("Steps",PATH.length);
+  PATH.forEach((s,i)=>{ const sc=stepScore(s),done=stepDone(s);
+    const sub=done?("Done"+(sc?" · "+sc.right+" of "+sc.of+" right":"")):(progress.steps[s.id]&&progress.steps[s.id].seen?"Started":"Not started");
+    sec._list.appendChild(item({kind:"step",name:(i+1)+". "+s.title,sub,sans:true,ln:done?"✓":"",onClick:()=>goStep(i+1)})); });
+  w.appendChild(sec);
+  const act=el('<div class="qact"></div>'),n=nextStep(),b=el('<button class="btn-main">'+(pathDone()?"Continue":"Start")+'</button>');
+  b.addEventListener("click",()=>goStep(n>PATH.length?1:n));act.appendChild(b);w.appendChild(act);return w; }
+function renderPathStep(i){ const s=PATH[i-1],q=quizOf(s),st=stepState(s.id),w=document.createElement("div");
+  st.seen=true;progress.at=i;savePath();
+  const h=head("step","Step "+i+" of "+PATH.length,s.title,false,"",s.blurb);h.appendChild(pathBar());w.appendChild(h);
+  addLearning(w,"stage",s.id);
+  if(s.diagram)w.appendChild(diagramSection("Stage flow",s.diagram));
+  if(q&&q.keyCode&&byPath.has(q.keyCode.path)){ const kc=q.keyCode,sec=sectionEl("Key code · "+kc.name);sec.classList.add("sec-keycode");
+    const body=document.createElement("div");sec.replaceChild(body,sec._list);
+    if(kc.why)body.appendChild(el('<p class="keycode-why">'+esc(kc.why)+'</p>'));
+    body.appendChild(el('<div class="path">'+esc(kc.path)+' <span class="ln">'+rangeLabel(kc.start,kc.end)+'</span></div>'));
+    body.append(...codeView({file:kc.path,ranges:[[kc.start,kc.end]],whole:false}));
+    w.appendChild(sec); }
+  else if(s.files&&s.files.length)w.appendChild(filesSection(s.files));
+  if(q){ const sec=sectionEl("Check yourself",q.questions.length+(q.open?1:0));
+    q.questions.forEach((x,qi)=>sec._list.appendChild(mcqEl(s,qi,x)));
+    if(q.open)sec._list.appendChild(openEl(s,q.open));
+    w.appendChild(sec); }
+  const nav=document.createElement("div");nav.className="flownav";
+  const mk=(to,dir,title,cls)=>{ const b=document.createElement("button");b.className="fnav "+cls;
+    b.innerHTML='<span class="fnav-dir">'+dir+'</span><span class="fnav-t">'+esc(title)+'</span>';b.addEventListener("click",()=>goStep(to));return b; };
+  nav.appendChild(mk(i-1,"&larr; Previous",i>1?(i-1)+". "+PATH[i-2].title:"Introduction","prev"));
+  nav.appendChild(mk(i+1,i<PATH.length?"Next step &rarr;":"Finish &rarr;",i<PATH.length?(i+1)+". "+PATH[i].title:"See your score","next"));
+  w.appendChild(nav);return w; }
+function mcqEl(s,qi,q){ const st=stepState(s.id);
+  const box=el('<div class="quiz-q"><div class="qt">'+esc((qi+1)+". "+q.q)+'</div><div class="qopts"></div><div class="qres" hidden></div></div>');
+  const opts=box.querySelector(".qopts"),res=box.querySelector(".qres");
+  const reveal=p=>{ [...opts.children].forEach((b,i)=>{ b.disabled=true;if(i===q.answer)b.classList.add("right");else if(i===p)b.classList.add("wrong"); });
+    const ok=p===q.answer;res.hidden=false;
+    res.innerHTML='<b class="'+(ok?"ok":"no")+'">'+(ok?"Right.":"Not quite.")+'</b> '+esc(q.why[p]||"")+
+      (ok?"":'<br>Right answer: <b>'+esc(q.options[q.answer])+'</b>'+(q.why[q.answer]?" — "+esc(q.why[q.answer]):""));
+    if(q.cite&&byPath.has(q.cite)){ const b=el('<button class="chip">Show me in the code</button>');
+      b.addEventListener("click",()=>pushFrame({kind:"file",ref:q.cite,label:base(q.cite)}));res.appendChild(document.createElement("br"));res.appendChild(b); } };
+  q.options.forEach((o,i)=>{ const b=el('<button class="qopt">'+esc(o)+'</button>');
+    b.addEventListener("click",()=>{ if(st.picks[qi]!=null)return; st.picks[qi]=i;savePath();reveal(i); });opts.appendChild(b); });
+  if(st.picks[qi]!=null)reveal(st.picks[qi]);
+  return box; }
+// "Explain it back": Claude grades it against the stage's key points (needs `codesight serve`).
+function openEl(s,open){ const st=stepState(s.id);
+  const box=el('<div class="quiz-q"><div class="qt">Explain it back</div><div class="qsub">'+esc(open.q)+'</div><textarea class="qexplain" placeholder="In your own words — a few sentences is enough."></textarea><div class="qact"></div><div class="qres" hidden></div></div>');
+  const ta=box.querySelector("textarea"),act=box.querySelector(".qact"),res=box.querySelector(".qres");
+  if(st.open&&st.open.answer)ta.value=st.open.answer;
+  const show=g=>{ res.hidden=false;const cls=g.score===g.of?"ok":g.score?"mid":"no";
+    res.innerHTML='<b class="'+cls+'">'+g.score+' of '+g.of+' key points.</b> '+esc(g.feedback||"")+
+      (g.missed&&g.missed.length?'<div style="margin-top:6px">Also worth knowing:</div><ul class="qmiss">'+g.missed.map(m=>'<li>'+esc(m)+'</li>').join("")+'</ul>':""); };
+  if(LIVE){ const b=el('<button class="btn-main">Check my answer</button>');act.appendChild(b);act.appendChild(el('<span class="hint">⌘ + Enter</span>'));
+    const check=()=>{ const answer=ta.value.trim(); if(!answer||b.disabled)return; b.disabled=true;b.textContent="Checking…";
+      fetch("/api/grade",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({stage:s.id,answer})})
+        .then(r=>r.json().then(j=>{ if(!r.ok)throw new Error(j.error||"could not check it");return j; }))
+        .then(g=>{ st.open={answer,score:g.score,of:g.of,feedback:g.feedback,missed:g.missed};savePath();show(g); })
+        .catch(e=>{ res.hidden=false;res.innerHTML='<span class="no">'+esc(e.message)+'</span>'; })
+        .finally(()=>{ b.disabled=false;b.textContent="Check again"; }); };
+    b.addEventListener("click",check);
+    ta.addEventListener("keydown",e=>{ if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){ e.preventDefault();check(); } }); }
+  else{ const b=el('<button class="ghlink">Show the key points</button>');
+    b.addEventListener("click",()=>{ res.hidden=false;res.innerHTML='A good answer covers:<ul class="qmiss">'+open.points.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul>'; });
+    act.appendChild(b); }
+  if(st.open&&st.open.score!=null)show(st.open);
+  return box; }
+function renderPathFinish(){ const w=document.createElement("div");
+  let right=0,of=0,got=0,pts=0;
+  PATH.forEach(s=>{ const sc=stepScore(s);if(!sc)return; right+=sc.right;of+=sc.of; if(sc.open){got+=sc.open.score;pts+=sc.open.of;} });
+  const done=pathDone();
+  const h=head("step","Finished",done>=PATH.length?"You walked the whole request flow":"Your score so far",false,"",done+" of "+PATH.length+" steps done.");
+  h.appendChild(pathBar());w.appendChild(h);
+  const k=document.createElement("div");k.className="kpis";
+  k.appendChild(el('<div class="kpi"><span class="val">'+right+' / '+of+'</span><span class="lab">questions right</span></div>'));
+  if(pts)k.appendChild(el('<div class="kpi"><span class="val">'+got+' / '+pts+'</span><span class="lab">key points explained</span></div>'));
+  w.appendChild(k);
+  const rows=PATH.map((s,i)=>({s,i,sc:stepScore(s)}));
+  const weak=rows.filter(x=>!stepDone(x.s)||(x.sc&&(x.sc.right<x.sc.of||(x.sc.open&&x.sc.open.score<x.sc.open.of))));
+  const sec=sectionEl(weak.length?"Worth another look":"Every step",(weak.length?weak:rows).length);
+  (weak.length?weak:rows).forEach(({s,i,sc})=>{
+    const sub=!stepDone(s)?"Not finished":(sc?sc.right+" of "+sc.of+" right"+(sc.open?" · "+sc.open.score+" of "+sc.open.of+" key points":""):"No quiz");
+    sec._list.appendChild(item({kind:"step",name:(i+1)+". "+s.title,sub,sans:true,onClick:()=>goStep(i+1)})); });
+  w.appendChild(sec);
+  const act=el('<div class="qact"></div>');
+  const back=el('<button class="btn-main">Back to the overview</button>');back.addEventListener("click",()=>open({t:"overview"}));
+  const again=el('<button class="ghlink">Start again</button>');again.addEventListener("click",()=>{ progress={steps:{},at:0};savePath();goStep(1); });
+  act.append(back,again);w.appendChild(act);return w; }
+
 // ---- navigation helpers (search palette + agent commands) ----
 const lookup={stage:stageById,domain:domainById,tool:toolById,concern:concernById,store:storeById,infra:infraById};
-function known(t){ if(!t||!t.t)return false; if(t.t==="overview")return true;
+function known(t){ if(!t||!t.t)return false; if(t.t==="overview")return true; if(t.t==="path")return PATH.length>0;
   if(lookup[t.t])return lookup[t.t].has(t.id); if(t.t==="area")return filesByArea.has(t.id); if(t.t==="file")return byPath.has(t.id); return false; }
 function labelOf(t){ const x=lookup[t.t]&&lookup[t.t].get(t.id); return x?(x.title||x.name||x.label):t.t==="area"?t.id:undefined; }
 function fileStack(path){ const f=byPath.get(path); markActive(keyOf({t:"area",id:f.area}));
   return [{kind:"area",ref:f.area,label:f.area},{kind:"file",ref:path,label:base(path)}]; }
 function openFile(path){ if(!byPath.has(path))return; stack=fileStack(path); render(true); }
 function openFunc(path,name){ if(!byPath.has(path))return; stack=[...fileStack(path),{kind:"function",file:path,fn:name,label:name}]; render(true); }
-function openCode(path,start,end,note){ if(!byPath.has(path))return; stack=[...fileStack(path),{kind:"code",file:path,start,end,note,label:rangeLabel(start,end)}]; render(true); }
+function openCode(path,ranges,note){ if(!byPath.has(path))return; stack=[...fileStack(path),codeFrame(path,ranges,note,false)]; render(true); }
 function goto(t,label){ if(!known(t))return false; if(t.t==="file")openFile(t.id); else open(t,label||labelOf(t)); return true; }
 
 // ---- focus bar: the question that moved the dashboard, suggestions, highlighted files ----
@@ -495,27 +821,53 @@ function paintFocus(){ focusEl.innerHTML="";
   if(fstate.suggest&&fstate.suggest.length){ const r=row("Did you mean");
     fstate.suggest.forEach(o=>{ const b=el('<button class="chip">'+esc(o.label)+'</button>');b.addEventListener("click",()=>goto(o.target,o.label));r.appendChild(b); }); }
   if(hl.size){ const r=row("In this answer");if(fstate.note)r.appendChild(el('<span>'+esc(fstate.note)+'</span>'));
-    [...hl].forEach(p=>{ const b=el('<button class="chip">'+esc(base(p))+'</button>');b.title=p;b.addEventListener("click",()=>openFile(p));r.appendChild(b); }); }
+    [...hl].forEach(p=>{ const rs=citedLines.get(p);
+      const b=el('<button class="chip">'+esc(base(p)+(rs?" · "+rangesLabel(rs.slice(0,2)):""))+'</button>');b.title=p;
+      b.addEventListener("click",()=>rs?openCode(p,rs,fstate.note):openFile(p));r.appendChild(b); }); }
   const first=focusEl.firstChild;
   if(first){ const x=el('<button class="focus-x" title="Clear" aria-label="Clear">&times;</button>');x.addEventListener("click",clearFocus);first.appendChild(x); }
   focusEl.hidden=!first; }
 function paintHighlights(){ pbody.querySelectorAll("[data-path]").forEach(b=>b.classList.toggle("hl",hl.has(b.dataset.path))); }
 function clearAsk(){ fstate.reason="";fstate.suggest=null;paintFocus(); }
-function clearFocus(){ hl=new Set();fstate.note="";clearAsk();paintHighlights(); }
+function clearFocus(){ hl=new Set();citedLines=new Map();fstate.note="";clearAsk();paintHighlights(); }
 
 // ---- live: commands pushed by `codesight serve` (prompt hook + agent MCP tools) ----
 function onCommand(c){
   if(c.type==="open"){ if(goto(c.target,c.label)){ fstate.reason=c.reason||"";fstate.suggest=null;paintFocus(); } }
   else if(c.type==="suggest"){ fstate.reason=c.question||"";fstate.suggest=(c.options||[]).filter(o=>known(o.target));paintFocus(); }
-  else if(c.type==="highlight"){ hl=new Set((c.paths||[]).filter(p=>byPath.has(p)));fstate.note=c.note||"";paintFocus();paintHighlights(); }
-  else if(c.type==="code"){ const a=Math.max(1,+c.start||1);openCode(c.path,a,Math.max(a,+c.end||a),c.note||""); }
+  else if(c.type==="highlight"){ citedLines=new Map();
+    (c.lines||[]).forEach(l=>{ if(!byPath.has(l.path))return; const a=Math.max(1,+l.start||1);
+      if(!citedLines.has(l.path))citedLines.set(l.path,[]); citedLines.get(l.path).push([a,Math.max(a,+l.end||a)]); });
+    hl=new Set([...(c.paths||[]),...citedLines.keys()].filter(p=>byPath.has(p)));fstate.note=c.note||"";paintFocus();paintHighlights(); }
+  else if(c.type==="code"){ const rs=Array.isArray(c.ranges)&&c.ranges.length?c.ranges:[[+c.start||1,+c.end||+c.start||1]];
+    openCode(c.path,rs.map(r=>{ const a=Math.max(1,+r[0]||1);return [a,Math.max(a,+r[1]||a)]; }),c.note||""); }
   else if(c.type==="diagram"){ if(c.mermaid)addUserDiagram({kind:c.kind,title:c.title||"Diagram",mermaid:c.mermaid}); }
+  else if(c.type==="simple"){ if(c.analogy&&Array.isArray(c.steps))addUserDiagram({title:c.title||"In simple words",card:{analogy:c.analogy,steps:c.steps}}); }
 }
 if(LIVE){ const pill=document.getElementById("livepill");pill.hidden=false;
   const es=new EventSource("/events");
-  es.onopen=()=>{ pill.classList.add("on");pill.textContent="live"; };
+  es.onopen=()=>{ pill.classList.add("on");pill.textContent="live";sendPrefs(); };
   es.onerror=()=>{ pill.classList.remove("on");pill.textContent="reconnecting"; };
   es.onmessage=e=>{ let c;try{c=JSON.parse(e.data);}catch{return;} onCommand(c); }; }
+
+// ---- learner picker ----
+const picker=document.getElementById("picker"),learnerLabel=document.getElementById("learnerlabel");
+const cap=s=>s[0].toUpperCase()+s.slice(1);
+let draft=null;
+function paintLearner(){ learnerLabel.textContent=cap(prefs.style)+" · "+cap(prefs.level); }
+function paintPicker(){ picker.querySelectorAll(".pk-row").forEach(r=>r.querySelectorAll(".pk-opt").forEach(b=>b.classList.toggle("on",draft[r.dataset.k]===b.dataset.v))); }
+function pickerOpen(){ draft={...prefs};paintPicker();picker.hidden=false;document.getElementById("pk-done").focus(); }
+function pickerClose(save){ picker.hidden=true; if(!save)return;
+  prefs={...draft};prefsChosen=true;try{localStorage.setItem(LEARNER_KEY,JSON.stringify(prefs));}catch{}
+  document.documentElement.dataset.style=prefs.style;document.documentElement.dataset.level=prefs.level;
+  paintLearner();sendPrefs();render(false); }
+// Tell `codesight serve`, so the agent answers in the same style (get_overview + the prompt hook).
+function sendPrefs(){ if(!LIVE||!prefsChosen)return; fetch("/api/learner",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({style:prefs.style,level:prefs.level})}).catch(()=>{}); }
+picker.querySelectorAll(".pk-row").forEach(r=>r.addEventListener("click",e=>{ const b=e.target.closest(".pk-opt");if(!b)return;draft[r.dataset.k]=b.dataset.v;paintPicker(); }));
+document.getElementById("pk-done").addEventListener("click",()=>pickerClose(true));
+picker.addEventListener("click",e=>{ if(e.target===picker)pickerClose(!savedPrefs); });
+document.getElementById("learnerbtn").addEventListener("click",pickerOpen);
+paintLearner();
 
 // ---- search palette (Cmd+K or /): instant, local, no AI ----
 const pal=document.getElementById("pal"),palIn=document.getElementById("pal-in"),palList=document.getElementById("pal-list");
@@ -553,9 +905,14 @@ palIn.addEventListener("keydown",e=>{
   else if(e.key==="Escape")palClose(); });
 pal.addEventListener("click",e=>{ if(e.target===pal)palClose(); });
 document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&!picker.hidden){ pickerClose(!savedPrefs);return; }
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){ e.preventDefault();pal.hidden?palOpen():palClose(); }
   else if(e.key==="/"&&pal.hidden&&!/^(input|textarea)$/i.test(document.activeElement.tagName)){ e.preventDefault();palOpen(); } });
 document.getElementById("searchbtn").addEventListener("click",palOpen);
 
+paintPathRail();
 open({t:"overview"});
+if(!savedPrefs)pickerOpen(); // first visit: ask how they learn
+// Warm the diagram engine once the page is idle, so "Draw this" never waits on the download.
+(window.requestIdleCallback||(f=>setTimeout(f,300)))(()=>{ loadMermaid().catch(()=>{}); if(LIVE)loadHljs().catch(()=>{}); });
 </script>

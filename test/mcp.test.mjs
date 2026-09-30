@@ -63,13 +63,40 @@ test('show tools push UI commands — only for things that exist in the map', as
   assert.deepEqual(pushed, [
     { type: 'open', target: { t: 'tool', id: 'get-prices' } },
     { type: 'highlight', paths: ['src/db/client.ts'], note: 'the query path' },
-    { type: 'code', path: 'src/tools/get-prices.ts', start: 2, end: 9, note: '' },
+    { type: 'code', path: 'src/tools/get-prices.ts', ranges: [[2, 9]], note: '' },
     { type: 'diagram', kind: 'workflow', title: 'Price request', mermaid: 'journey\n  title Price request\n  section Ask\n    Call get_prices: 5: User' },
   ]);
   assert.equal((await call('show', { kind: 'tool', id: 'nope' })).isError, true);
   assert.equal((await call('show_code', { path: '../etc/passwd', start: 1 })).isError, true);
   assert.equal((await call('show_diagram', { kind: 'workflow', title: 'x', mermaid: 'not mermaid' })).isError, true);
   assert.equal(pushed.length, 4);
+});
+
+test('show_simple: pushes a beginner card, needs 2+ steps', async () => {
+  pushed.length = 0;
+  const steps = [{ icon: '🎫', text: 'Show your card' }, { icon: '🚪', text: 'The door checks your plan' }];
+  await call('show_simple', { title: 'Entitlements', analogy: 'Like a gym card', steps });
+  assert.deepEqual(pushed, [{ type: 'simple', title: 'Entitlements', analogy: 'Like a gym card', steps }]);
+  assert.equal((await call('show_simple', { title: 'x', analogy: 'Like y', steps: steps.slice(0, 1) })).isError, true);
+});
+
+test('get_overview: includes the learner style and tips when the dashboard has one', async () => {
+  const r = await callTool('get_overview', {}, { ...ctx, learner: () => ({ style: 'visual', level: 'beginner' }) });
+  const data = JSON.parse(r.text);
+  assert.equal(data.learner.style, 'visual');
+  assert.match(data.learner.tips, /show_diagram/);
+  assert.equal(JSON.parse((await callTool('get_overview', {}, ctx)).text).learner, undefined);
+});
+
+test('show_code: several ranges in one file; highlight can carry exact lines', async () => {
+  pushed.length = 0;
+  await call('show_code', { path: 'src/db/client.ts', ranges: [{ start: 1, end: 3 }, { start: 8 }, { start: 0 }] });
+  await call('highlight', { lines: [{ path: 'src/auth/entitlements.ts', start: 2, end: 4 }, { path: 'nope.ts', start: 1 }], note: 'the check' });
+  assert.deepEqual(pushed, [
+    { type: 'code', path: 'src/db/client.ts', ranges: [[1, 3], [8, 8]], note: '' },
+    { type: 'highlight', paths: ['src/auth/entitlements.ts'], note: 'the check', lines: [{ path: 'src/auth/entitlements.ts', start: 2, end: 4 }] },
+  ]);
+  assert.equal((await call('show_code', { path: 'src/db/client.ts' })).isError, true);
 });
 
 test('show tools: no dashboard running is not an error', async () => {

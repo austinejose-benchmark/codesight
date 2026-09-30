@@ -56,6 +56,7 @@ export async function scan(projectRoot, outDir) {
     writeFileSync(gitignore, [
       '# codesight data dir. Commit the AI work + viewer:',
       '#   summaries.json, architecture.json  (paid — a portable cache; re-runs stay free)',
+      '#   simple.json, diagrams.json, quiz.json  (beginner cards, drawn diagrams, quiz — same idea)',
       '#   codesight.html                     (the self-contained viewer)',
       '# Everything below regenerates for free from those + a re-scan.',
       'tmp/',
