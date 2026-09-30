@@ -6,6 +6,8 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync } from 'n
 import { spawn, spawnSync } from 'node:child_process';
 
 const COMMANDS = {
+  serve: 'live dashboard — your agent CLI (Claude Code, Codex) drives it as you ask',
+  mcp: 'MCP server for agent CLIs — reads the map, drives the dashboard',
   update: 'incremental — only re-do the changed files + show their impact',
   hook: 'install a commit/PR hook that keeps the map fresh (--github for CI)',
   scan: 'structure only — tree-sitter, 0 tokens (advanced / CI)',
@@ -23,7 +25,8 @@ function printHelp() {
   process.stdout.write('  --model <name>        summary model (default sonnet)\n');
   process.stdout.write('  --concurrency <n>     parallel summary batches (default 4)\n');
   process.stdout.write('  --paths a,b           only these files\n');
-  process.stdout.write('  --out <dir>           data dir (default <repo>/.codesight)\n\n');
+  process.stdout.write('  --out <dir>           data dir (default <repo>/.codesight)\n');
+  process.stdout.write('  --port <n>            serve: port (default 4747)\n\n');
   process.stdout.write('Sub-commands (advanced):\n');
   for (const [name, desc] of Object.entries(COMMANDS)) {
     process.stdout.write(`  ${name.padEnd(9)}${desc}\n`);
@@ -195,11 +198,8 @@ async function cmdUpdate(args) {
   const { payload } = build(join(outDir, 'structure.json'), outDir, htmlOut);
 
   // Impact: which files import the ones that changed.
-  const rev = new Map();
-  for (const f of structure.files) for (const imp of (f.imports || [])) {
-    if (!rev.has(imp)) rev.set(imp, []);
-    rev.get(imp).push(f.path);
-  }
+  const { importersOf } = await import('../src/assemble/imports.mjs');
+  const rev = importersOf(structure.files);
   process.stdout.write(`\n  ${codeChanged.length} file summar${codeChanged.length === 1 ? 'y' : 'ies'} refreshed · ${payload.files.length} files · map updated${args.arch ? ' (+architecture)' : ' (architecture reused)'}\n  → ${htmlOut}\n`);
   process.stdout.write('\n  change effect — files that import the changed ones:\n');
   let any = false;
@@ -261,6 +261,38 @@ async function cmdHook(args) {
   return 0;
 }
 
+// codesight serve — the live dashboard. Runs until Ctrl+C.
+async function cmdServe(args) {
+  const { startServer, DEFAULT_PORT } = await import('../src/serve/index.mjs');
+  const projectRoot = resolve(args._[0] || process.cwd());
+  const outDir = resolve(args.out || join(projectRoot, '.codesight'));
+  if (!existsSync(join(outDir, 'structure.json'))) {
+    process.stderr.write(`codesight serve: no map in ${outDir} yet — run \`codesight ${args._[0] || '.'}\` first\n`);
+    return 1;
+  }
+  const log = (line) => process.stderr.write(`  ${line}\n`);
+  const s = await startServer({ projectRoot, outDir, port: args.port ? Number(args.port) : DEFAULT_PORT, log });
+  process.stdout.write(
+    `\n  codesight live → ${s.url}\n` +
+    `  router: ${s.router === 'jev' ? 'jev (TYPESAFE_API_KEY set)' : 'local match (set TYPESAFE_API_KEY to use jev)'}\n` +
+    '  Ask in Claude Code / Codex — the dashboard follows. Ctrl+C to stop.\n\n',
+  );
+  if (args.open) openInBrowser(s.url);
+  const stop = () => s.close().then(() => process.exit(0));
+  process.on('SIGINT', stop);
+  process.on('SIGTERM', stop);
+  return new Promise(() => {}); // keep serving
+}
+
+// codesight mcp — stdio MCP server. The map is found from --root, or by walking
+// up from the agent's project dir / cwd.
+async function cmdMcp(args) {
+  const { runStdio } = await import('../src/mcp/index.mjs');
+  const root = resolve(typeof args.root === 'string' ? args.root : process.env.CODESIGHT_ROOT || process.env.CLAUDE_PROJECT_DIR || process.cwd());
+  await runStdio(root);
+  return 0;
+}
+
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
   if (!command || command === 'help' || command === '--help' || command === '-h') {
@@ -269,6 +301,8 @@ async function main() {
   }
   if (command in COMMANDS) {
     const args = parseArgs(rest);
+    if (command === 'serve') return cmdServe(args);
+    if (command === 'mcp') return cmdMcp(args);
     if (command === 'update') return cmdUpdate(args);
     if (command === 'hook') return cmdHook(args);
     if (command === 'scan') return cmdScan(args);

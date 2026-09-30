@@ -9,7 +9,7 @@
   "files": ["bin", "src", "viewer", "NOTICE"],
   "scripts": {
     "codesight": "node bin/codesight.mjs",
-    "test": "node --test test/"
+    "test": "node --test \"test/*.test.mjs\""
   },
   "keywords": ["architecture", "code-map", "tree-sitter", "knowledge-graph", "visualization"],
   "dependencies": {

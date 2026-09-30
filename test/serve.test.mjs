@@ -1,0 +1,97 @@
+import { test, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { request } from 'node:http';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { Script } from 'node:vm';
+import { startServer, statePathOf } from '../src/serve/index.mjs';
+import { renderHtml } from '../src/assemble/build.mjs';
+import { assemble } from '../src/assemble/index.mjs';
+import { makeFixture, sseClient, STRUCTURE } from './helpers.mjs';
+
+const { root, outDir } = makeFixture();
+let s;
+before(async () => { s = await startServer({ projectRoot: root, outDir, port: 0, apiKey: '' }); });
+after(async () => { await s.close(); });
+
+const post = (path, body, headers = { 'content-type': 'application/json' }) =>
+  fetch(s.url + path, { method: 'POST', headers, body: JSON.stringify(body) });
+
+// Compile the viewer's inline script: catches template syntax errors without a browser.
+const mainScript = (html) => html.split('<script>').pop().split('</script>')[0];
+
+test('static build: live off, and "$&" in a summary survives embedding', () => {
+  const html = renderHtml(assemble(STRUCTURE, outDir));
+  assert.match(html, /const LIVE=false;/);
+  assert.ok(html.includes("with $& and $' patterns"));
+  assert.doesNotThrow(() => new Script(mainScript(html)));
+});
+
+test('GET / serves the live viewer', async () => {
+  const html = await (await fetch(s.url)).text();
+  assert.match(html, /const LIVE=true;/);
+  assert.match(html, /"name":"mini"/);
+  assert.doesNotThrow(() => new Script(mainScript(html)));
+});
+
+test('writes serve.json so the hook and MCP server can find it', () => {
+  assert.ok(existsSync(statePathOf(outDir)));
+});
+
+test('POST /api/show reaches every open dashboard', async () => {
+  const sse = await sseClient(`${s.url}/events`);
+  const r = await (await post('/api/show', { type: 'highlight', paths: ['src/db/client.ts'] })).json();
+  assert.deepEqual(r, { ok: true, clients: 1 });
+  assert.deepEqual(await sse.next(), { type: 'highlight', paths: ['src/db/client.ts'] });
+  assert.equal((await post('/api/show', { type: 'rm -rf' })).status, 400);
+  sse.close();
+});
+
+test('POST /api/route: a clear question moves the dashboard', async () => {
+  const sse = await sseClient(`${s.url}/events`);
+  const r = await (await post('/api/route', { prompt: 'how does get_prices work' })).json();
+  assert.equal(r.action, 'open');
+  assert.equal(r.by, 'local');
+  assert.deepEqual(await sse.next(), { type: 'open', target: { t: 'tool', id: 'get-prices' }, label: 'get_prices', reason: 'how does get_prices work' });
+  sse.close();
+});
+
+test('GET /api/code: only files in the map, clamped to the file', async () => {
+  const c = await (await fetch(`${s.url}/api/code?path=src/db/client.ts&start=10&end=99`)).json();
+  assert.deepEqual([c.start, c.end, c.total], [10, 12, 12]);
+  assert.equal(c.lines[0], '// src/db/client.ts line 10');
+  assert.equal((await fetch(`${s.url}/api/code?path=secret.txt`)).status, 404);
+  assert.equal((await fetch(`${s.url}/api/code?path=../../etc/passwd`)).status, 404);
+});
+
+test('refuses non-JSON posts and foreign Host headers', async () => {
+  assert.equal((await post('/api/show', { type: 'open' }, { 'content-type': 'text/plain' })).status, 415);
+  const status = await new Promise((ok) => {
+    const req = request({ host: '127.0.0.1', port: s.port, path: '/api/state', headers: { host: 'evil.example:80' } }, (res) => { res.resume(); ok(res.statusCode); });
+    req.end();
+  });
+  assert.equal(status, 403);
+});
+
+test('prompt hook: forwards the prompt, prints nothing, exits 0', async () => {
+  const sse = await sseClient(`${s.url}/events`);
+  const hook = fileURLToPath(new URL('../scripts/codesight-route.mjs', import.meta.url));
+  const cp = spawn(process.execPath, [hook], { stdio: ['pipe', 'pipe', 'pipe'] });
+  let out = '';
+  cp.stdout.on('data', (d) => { out += d; });
+  cp.stdin.end(JSON.stringify({ prompt: 'how are entitlements checked', cwd: `${root}/src/auth`, hook_event_name: 'UserPromptSubmit' }));
+  const code = await new Promise((ok) => cp.on('close', ok));
+  assert.equal(code, 0);
+  assert.equal(out, '');
+  const msg = await sse.next();
+  assert.deepEqual(msg.target, { t: 'concern', id: 'entitlements' });
+  sse.close();
+});
+
+test('prompt hook: no server for this repo → exits 0 quietly', async () => {
+  const hook = fileURLToPath(new URL('../scripts/codesight-route.mjs', import.meta.url));
+  const cp = spawn(process.execPath, [hook], { stdio: ['pipe', 'pipe', 'pipe'] });
+  cp.stdin.end(JSON.stringify({ prompt: 'hello', cwd: '/' }));
+  assert.equal(await new Promise((ok) => cp.on('close', ok)), 0);
+});

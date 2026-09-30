@@ -1,9 +1,26 @@
 {
   "name": "codesight",
   "version": "0.1.0",
-  "description": "Turn any repository into an explorable architecture map — free tree-sitter structure plus lean, cached summaries. Ships the codesight CLI as a bundled /codesight command.",
-  "author": { "name": "Austine Jose" },
+  "description": "Turn any repository into an explorable architecture map — free tree-sitter structure plus lean, cached summaries. Ships the codesight CLI as a bundled /codesight command, an MCP server so Claude Code can drive the live dashboard, and a prompt hook that moves the dashboard as you ask.",
+  "author": {
+    "name": "Austine Jose"
+  },
   "homepage": "https://github.com/austinejose-benchmark/codesight",
   "license": "MIT",
-  "keywords": ["architecture", "code-map", "tree-sitter", "visualization"]
+  "keywords": [
+    "architecture",
+    "code-map",
+    "tree-sitter",
+    "visualization"
+  ],
+  "mcpServers": {
+    "codesight": {
+      "type": "stdio",
+      "command": "bash",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/codesight-run.sh",
+        "mcp"
+      ]
+    }
+  }
 }

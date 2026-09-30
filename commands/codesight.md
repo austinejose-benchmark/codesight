@@ -1,6 +1,6 @@
 ---
 description: Scan a repo and build or refresh its codesight architecture map
-argument-hint: "[path | subcommand] [flags] — e.g. \".\", \"build --open\", \"update\", \"hook\""
+argument-hint: "[path | subcommand] [flags] — e.g. \".\", \"build --open\", \"serve --open\", \"update\", \"hook\""
 allowed-tools: Bash
 ---
 
@@ -17,5 +17,8 @@ After it finishes:
 - The map is written to `.codesight/` in the target repo — summaries, architecture,
   and a standalone HTML viewer.
 - Tell the user it is ready, and that `/codesight build --open` opens the viewer.
+- For `serve`: it keeps running — start it in the background, then give the user
+  the URL. While it runs, the dashboard follows their questions; as you explain,
+  use the codesight MCP tools (`show`, `highlight`, `show_code`, `show_diagram`).
 - If summaries were skipped (no `claude` CLI login and no `ANTHROPIC_API_KEY`), say
   so plainly — the tree-sitter structure map still works with zero summaries.

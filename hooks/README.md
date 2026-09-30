@@ -1,14 +1,13 @@
-# Hooks (future)
+# Hooks
 
-Add Claude Code lifecycle hooks in `hooks/hooks.json` (auto-discovered on install).
-These fire on Claude Code events — session start, after a tool runs, etc. — **not**
-on git events.
+Claude Code lifecycle hooks, declared in `hooks/hooks.json` (auto-discovered on
+install). These fire on Claude Code events — **not** on git events.
 
-Example idea: a `SessionStart` hook that runs `codesight update` so the map is
-fresh when you open the repo. Call the bundled CLI via
-`${CLAUDE_PLUGIN_ROOT}/scripts/codesight-run.sh`.
+- **UserPromptSubmit** → `scripts/codesight-route.mjs`. Sends each prompt to a
+  running `codesight serve`, so the dashboard jumps to the right part of the map
+  before Claude answers. No dependencies, prints nothing (a UserPromptSubmit
+  hook's output would be added to Claude's context), exits in well under a
+  second, and does nothing when `serve` is not running.
 
-> Do not confuse this with the git pre-commit hook that `codesight hook` installs —
-> that one is a plain git hook, a separate thing.
-
-Nothing here yet — this folder is a placeholder.
+> Do not confuse these with the git pre-commit hook that `codesight hook`
+> installs — that one is a plain git hook, a separate thing.

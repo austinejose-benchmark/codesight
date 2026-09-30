@@ -1,0 +1,16 @@
+{
+  "description": "codesight: send each prompt to a running `codesight serve`, so the dashboard jumps to the right part of the map before Claude answers. Does nothing when serve is not running.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/codesight-route.mjs\"",
+            "timeout": 2
+          }
+        ]
+      }
+    ]
+  }
+}
